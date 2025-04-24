@@ -1,2 +1,2 @@
 guess = [84, 73, 69, 77, 80, 79]
-solution = '0x26a9cd878299aae15aa2e27d41fab958fbe7f0730d81e834c5315bdbf3eecb04'
+expected_hash = '0x26a9cd878299aae15aa2e27d41fab958fbe7f0730d81e834c5315bdbf3eecb04'
