@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-interface IVerifier {
+interface IHonkVerifier {
     function verify(bytes calldata proof, bytes32[] calldata publicInputs) external view returns (bool);
 }
 
@@ -28,7 +28,7 @@ contract Quest {
         require(publicInputs.length == 1, "Invalid public input length");
         require(publicInputs[0] == solutionHash, "Public input does not match");
 
-        bool ok = IVerifier(verifier).verify(proof, publicInputs);
+        bool ok = IHonkVerifier(verifier).verify(proof, publicInputs);
         emit ProofSubmitted(msg.sender, ok);
         require(ok, "Proof verification failed");
 
