@@ -1,12 +1,20 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
-import { JWT } from "next-auth/jwt";
 
 const handler = NextAuth({
   providers: [
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      clientId: process.env.GOOGLE_CLIENT_ID || "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+      authorization: {
+        params: {
+          scope: "openid email profile",
+          prompt: "consent",
+          access_type: "offline",
+          response_type: "code",
+        }
+      },
+      idToken: true,
     }),
   ],
   pages: {
@@ -15,34 +23,33 @@ const handler = NextAuth({
   },
   callbacks: {
     async jwt({ token, account, user }) {
-      // Initial sign in
       if (account && user) {
         return {
           ...token,
           accessToken: account.access_token,
           refreshToken: account.refresh_token,
-          // Add any custom data you want to include in the JWT
+          idToken: account.id_token,
           customData: {
             userId: user.id,
             email: user.email,
-            // Add any other user data you want to sign
           },
         };
       }
       return token;
     },
     async session({ session, token }) {
-      // Send custom data to the client
       return {
         ...session,
+        token: token,
         accessToken: token.accessToken,
+        idToken: token.idToken,
         customData: token.customData,
       };
     },
   },
   session: {
     strategy: "jwt",
-  },  
+  },
   secret: process.env.NEXTAUTH_SECRET,
 });
 

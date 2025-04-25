@@ -4,7 +4,6 @@ import { signIn, signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { generateInputs } from "noir-jwt";
 
 export default function Navbar() {
   const { data: session } = useSession();
@@ -17,20 +16,6 @@ export default function Navbar() {
     });
     router.refresh();
   };
-
-  console.log("session", session);
-
-  async function getInputs() {
-    const inputs = await generateInputs({
-      jwt: session?.accessToken,
-      pubkey: session?.user?.pubkey,
-      maxSignedDataLength: 1024,
-    });
-  
-    console.log("inputs", inputs);
-  }
-
-  getInputs();
 
   return (
     <nav className="bg-white shadow-lg">
