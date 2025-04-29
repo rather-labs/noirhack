@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
-import { get_quest_metadata, submit_proof } from '../../../../api/riddle_quest';
-import { generate_proof } from '../../../../circuit/generate_proof';
+import { getQuestMetadata, submitProof } from '../../../../api/riddle_quest';
+import { generateProof } from '../../../../circuit/generateProof';
 import { RIDDLE_CONTRACT_ADDRESS } from '../../../../config/env';
 
 export type SubmitStatus =
@@ -25,13 +25,13 @@ export function useSubmitProof() {
     setStatus('fetching_metadata');
 
     try {
-      const metadata = await get_quest_metadata(RIDDLE_CONTRACT_ADDRESS);
+      const metadata = await getQuestMetadata(RIDDLE_CONTRACT_ADDRESS);
 
       setStatus('generating_proof');
-      const proof_data = await generate_proof(guess, metadata.solutionHash);
+      const proofData = await generateProof(guess, metadata.solutionHash);
 
       setStatus('submitting_proof');
-      const txHash = await submit_proof(RIDDLE_CONTRACT_ADDRESS, proof_data, [
+      const txHash = await submitProof(RIDDLE_CONTRACT_ADDRESS, proofData, [
         metadata.solutionHash,
       ]);
 

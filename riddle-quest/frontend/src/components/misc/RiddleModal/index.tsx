@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Input } from '../../ui/Input';
 import { Button } from '../../ui/Button';
 import { ModalContainer } from '../../ui/Modal';
-import { string_to_ascii } from '../../../utils/string_to_ascii';
+import { stringToAscii } from '../../../utils/stringToAscii';
 import { useSubmitProof } from './hooks/useSubmitProof';
 import { ConnectWallet } from '../ConnectWallet';
 
@@ -15,7 +15,7 @@ export const RiddleModal: React.FC<{
 
   const handleSubmit = async () => {
     try {
-      const guess = string_to_ascii(answer);
+      const guess = stringToAscii(answer);
       const res = await submit(guess);
 
       console.log(res);

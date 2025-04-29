@@ -26,7 +26,7 @@ export const walletClient =
  * @param functionName Name of the read function
  * @param args         Optional arguments array
  */
-export async function read_contract<T>({
+export async function readContract<T>({
   address,
   abi,
   functionName,
@@ -54,7 +54,7 @@ export async function read_contract<T>({
  * @param args      Optional arguments array
  * @returns Transaction hash
  */
-export async function write_contract({
+export async function writeContract({
   address,
   abi,
   functionName,

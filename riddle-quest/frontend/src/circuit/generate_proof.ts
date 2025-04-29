@@ -2,11 +2,11 @@ import circuit from './riddle.json';
 import { Noir } from '@noir-lang/noir_js';
 import { ProofData, UltraHonkBackend } from '@aztec/bb.js';
 
-export async function generate_proof(
+export async function generateProof(
   guess: number[],
   expected_hash: string
 ): Promise<ProofData> {
-  const fn = generate_proof.name;
+  const fn = generateProof.name;
 
   if (!guess.length) {
     throw new Error(`${fn}: received empty array ❌`);
@@ -17,23 +17,23 @@ export async function generate_proof(
   try {
     // @ts-expect-error – no ideeeeaaa woaaaaaaa
     const noir = new Noir(circuit);
-    const honk_backend = new UltraHonkBackend(circuit.bytecode, { threads: 1 });
+    const honkBackend = new UltraHonkBackend(circuit.bytecode, { threads: 1 });
 
     console.log(`${fn}: generating witness… ⏳`);
     const { witness } = await noir.execute({ guess, expected_hash });
     console.log(`${fn}: witness generated ✅`);
 
     console.log(`${fn}: generating proof… ⏳`);
-    const proof_data = await honk_backend.generateProof(witness, {
+    const proofData = await honkBackend.generateProof(witness, {
       keccak: true,
     });
     console.log(`${fn}: proof generated ✅`);
 
-    if (!honk_backend.verifyProof(proof_data)) {
+    if (!honkBackend.verifyProof(proofData)) {
       throw new Error('invalid proof');
     }
 
-    return proof_data;
+    return proofData;
   } catch (err) {
     const message =
       err instanceof Error ? `${fn}: ${err.message}` : `${fn}: unknown error`;

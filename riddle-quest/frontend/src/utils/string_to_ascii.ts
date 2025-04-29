@@ -3,7 +3,7 @@
  * @param str - The input string to convert
  * @returns An array of number representing ASCII code of each character
  */
-export function string_to_ascii(str: string): number[] {
+export function stringToAscii(str: string): number[] {
   // Split string into individual characters and map to their char codes
-  return Array.from(str).map(char => char.charCodeAt(0));
+  return Array.from(str).map((char) => char.charCodeAt(0));
 }

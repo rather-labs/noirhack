@@ -1,5 +1,5 @@
 import type { Abi, Address } from 'viem';
-import { read_contract, write_contract } from './web3';
+import { readContract, writeContract } from './web3';
 import QuestAbiJson from '../config/abi/Quest.json';
 import { ProofData } from '@aztec/bb.js';
 const QuestAbi = QuestAbiJson as unknown as Abi;
@@ -16,10 +16,10 @@ export interface QuestMetadata {
  * Fetches quest state from chain
  * @param address Quest contract address
  */
-export async function get_quest_metadata(
+export async function getQuestMetadata(
   address: Address
 ): Promise<QuestMetadata> {
-  const [verifier, solutionHash, winner, bounty, solved] = await read_contract<
+  const [verifier, solutionHash, winner, bounty, solved] = await readContract<
     [Address, `0x${string}`, Address, bigint, boolean]
   >({
     address,
@@ -36,15 +36,15 @@ export async function get_quest_metadata(
  * @param publicInputs Array of hex-encoded public inputs
  * @returns Transaction hash
  */
-export async function submit_proof(
+export async function submitProof(
   address: Address,
-  proof_data: ProofData,
+  proofData: ProofData,
   publicInputs: `0x${string}`[]
 ): Promise<`0x${string}`> {
-  return await write_contract({
+  return await writeContract({
     address,
     abi: QuestAbi,
     functionName: 'submitProof',
-    args: [proof_data.proof, publicInputs],
+    args: [proofData.proof, publicInputs],
   });
 }
