@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { Input } from '../../ui/Input';
 import { Button } from '../../ui/Button';
 import { ModalContainer } from '../../ui/Modal';
-import { stringToAscii } from '../../../utils/stringToAscii';
+
 import { useSubmitProof } from './hooks/useSubmitProof';
 import { ConnectWallet } from '../ConnectWallet';
+import { stringToAscii } from '../../../utils/stringToAscii';
 
 export const RiddleModal: React.FC<{
   isOpen: boolean;

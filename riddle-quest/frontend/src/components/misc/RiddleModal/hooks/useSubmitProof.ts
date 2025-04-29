@@ -1,7 +1,8 @@
 import { useState, useCallback } from 'react';
-import { getQuestMetadata, submitProof } from '../../../../api/riddle_quest';
-import { generateProof } from '../../../../circuit/generateProof';
+import { getQuestMetadata, submitProof } from '../../../../api/riddleQuest';
+
 import { RIDDLE_CONTRACT_ADDRESS } from '../../../../config/env';
+import { generateProof } from '../../../../circuit/generateProof';
 
 export type SubmitStatus =
   | 'idle'
