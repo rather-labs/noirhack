@@ -10,7 +10,9 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@aztec/bb.js": "0.77.0",
+    "@aztec/accounts": "0.82.2",
+    "@aztec/aztec.js": "0.82.2",
+    "@aztec/bb.js": "0.82.2",
     "@noir-lang/noir_js": "1.0.0-beta.3",
     "@noir-lang/noir_wasm": "1.0.0-beta.3",
     "@noir-lang/types": "1.0.0-beta.3",

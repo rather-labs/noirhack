@@ -5,8 +5,8 @@ import Navbar from "./components/Navbar";
 import { useJWTInfo, getOpenIDClaims } from "./utils/auth";
 import { useSession } from "next-auth/react";
 import { generateInputs } from "noir-jwt";
-import { generateProof } from "./utils/noir";
-import type { InputMap } from "@noir-lang/types";
+import { generateProof, verifyProof } from "./utils/noir";
+import type { InputMap, ProofData } from "@noir-lang/types";
 import { Toaster } from 'react-hot-toast';
 // Define proper types for inputs and session
 type NoirInputs = Record<string, unknown>; // Replace with proper type if available
@@ -20,9 +20,11 @@ export default function Home() {
   const [showTokenInfo, setShowTokenInfo] = useState(false);
   const [showInputs, setShowInputs] = useState(false);
   const [inputs, setInputs] = useState<NoirInputs | null>(null);
-  const [proof, setProof] = useState<string | null>(null);
+  const [proof, setProof] = useState<ProofData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingProof, setIsGeneratingProof] = useState(false);
+  const [isVerifyingProof, setIsVerifyingProof] = useState(false);
+  const [verificationResult, setVerificationResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const jwtInfo = useJWTInfo();
 
@@ -94,6 +96,26 @@ export default function Home() {
     }
   }
 
+  async function verifyNoirProof() {
+    if (!proof) {
+      setError("No proof available. Please generate proof first.");
+      return;
+    }
+
+    try {
+      setIsVerifyingProof(true);
+      setError(null);
+      const result = await verifyProof(proof);
+      setVerificationResult(result);
+    } catch (err: unknown) {
+      console.error("Error verifying proof:", err);
+      const errorMessage = err instanceof Error ? err.message : "Failed to verify proof";
+      setError(errorMessage);
+    } finally {
+      setIsVerifyingProof(false);
+    }
+  }
+
   const handleShowToken = () => {
     setShowTokenInfo(!showTokenInfo);
   };
@@ -154,6 +176,16 @@ export default function Home() {
                       className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
                     >
                       {isGeneratingProof ? "Generating Proof..." : "Generate Proof"}
+                    </button>
+                  )}
+                  {proof && (
+                    <button
+                      type="button"
+                      onClick={verifyNoirProof}
+                      disabled={isVerifyingProof}
+                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                    >
+                      {isVerifyingProof ? "Verifying Proof..." : "Verify Proof"}
                     </button>
                   )}
                 </div>
@@ -225,7 +257,21 @@ export default function Home() {
                 </div>
                 <div className="border-t border-gray-200 p-4">
                   <pre className="bg-gray-100 p-4 rounded-md overflow-auto text-xs text-gray-800 h-64">
-                    {proof}
+                    {JSON.stringify(proof, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            )}
+            
+            {verificationResult && (
+              <div className="mt-6 bg-white shadow overflow-hidden sm:rounded-lg">
+                <div className="px-4 py-5 sm:px-6">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900">Verification Result</h3>
+                  <p className="mt-1 max-w-2xl text-sm text-gray-500">Result of the proof verification.</p>
+                </div>
+                <div className="border-t border-gray-200 p-4">
+                  <pre className="bg-gray-100 p-4 rounded-md overflow-auto text-xs text-gray-800 h-64">
+                    {verificationResult}
                   </pre>
                 </div>
               </div>

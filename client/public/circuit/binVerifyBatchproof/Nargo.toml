@@ -1,0 +1,6 @@
+[package]
+name = "binVerifyproof"
+type = "bin"
+authors = [""]
+
+[dependencies]

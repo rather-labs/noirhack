@@ -34,6 +34,12 @@ npm run deploy
 ```bash
  Contract 0x0f58026f26557e90edddcfef2187e318444b5fdc5edc862086a4dc86f742657f successfully deployed.
 ```
+# Check version compatibility
+nargo
+aztec-nargo
+bb
+
+
 
 # Check for contract
 
