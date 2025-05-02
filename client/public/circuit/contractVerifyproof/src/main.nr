@@ -4,15 +4,26 @@ use dep::aztec::macros::aztec;
 contract jwtVotingQuest {
     use dep::aztec::{
         //keys::getters::get_public_keys,
-        macros::{functions::{initializer, internal, private, public, utility}, storage::storage},
+        macros::{functions::{
+            initializer, 
+            internal, 
+            private, 
+            public, 
+            //utility
+            }, storage::storage},
     };
     use dep::aztec::prelude::{AztecAddress, Map, PublicImmutable, PublicMutable};
     use dep::aztec::protocol_types::traits::{Hash, ToField};
-    use jwt::JWT;
+    use dep::std;
 
     global MAX_DATA_LENGTH: u32 = 1024; // max length of signed data (headerb64 + "." + payloadb64)
     global MAX_EMAIL_LENGTH: u32 = 32; // max length for email claim
     global MAX_KEY_LENGTH: u32 = 5; // max length for claim keys
+    // FIX: Failing if MAX_DESCRIPTION_LENGTH doesn't coincide with actual string length
+    global MAX_DESCRIPTION_LENGTH: u32 = 65; // max length for description
+    global HONK_VK_SIZE: u32 = 128;
+    global HONK_PROOF_SIZE: u32 = 456;
+    global HONK_IDENTIFIER: u32 = 1;
 
     #[storage]
     struct Storage<Context> {
@@ -38,24 +49,22 @@ contract jwtVotingQuest {
     #[private]
     // annotation to mark function as private and expose private context
     fn cast_vote(
-        data: BoundedVec<u8, MAX_DATA_LENGTH>,
-        base64_decode_offset: u32,
-        pubkey_modulus_limbs: pub [u128; 18],
-        redc_params_limbs: [u128; 18],
-        signature_limbs: [u128; 18],
+        verification_key : [Field; HONK_VK_SIZE], 
+        proof: [Field; HONK_PROOF_SIZE],// 93 ultraplonk | ultrahonk
+        public_inputs : [Field; 18], // 18 public inputs for each quest
         identifier: Field,
         candidate: Field
     ) {
-        let email_hash = jwtVotingQuest::at(context.this_address()).verify_jwt(
-            data,
-            base64_decode_offset,
-            pubkey_modulus_limbs,
-            redc_params_limbs,
-            signature_limbs
+        jwtVotingQuest::at(context.this_address()).verify_jwt(
+            verification_key,
+            proof,
+            public_inputs
         );
         
         // Use the email hash for the nullifier
-        context.push_nullifier(email_hash );
+
+        let nullifier = std::hash::pedersen_hash([context.msg_sender().to_field(), identifier]); // derive nullifier from sender and secret
+        context.push_nullifier(nullifier );
         jwtVotingQuest::at(context.this_address()).add_to_tally_public(identifier, candidate).enqueue(
             &mut context,
         );
@@ -76,14 +85,15 @@ contract jwtVotingQuest {
         }
     }
 
-    #[utility]
+    //#[utility]
     unconstrained fn get_vote(candidate: Field) -> u32 {
         storage.tally.at(candidate).read()
     }
 
-    #[utility]
-    unconstrained fn get_description() -> String {
-        "Voting quest: You have to get ${storage.quest_objective.read()} votes gain the quest"
+    //#[utility]
+    unconstrained fn get_description() {
+        let votes_needed = storage.quest_objective.read();   
+        println(f"Voting quest: You have to get {votes_needed} votes gain the quest");
     }
 
     #[public]
@@ -95,51 +105,17 @@ contract jwtVotingQuest {
     #[public]
     #[internal]
     fn verify_jwt(
-        data: BoundedVec<u8, MAX_DATA_LENGTH>,
-        base64_decode_offset: u32,
-        pubkey_modulus_limbs: [u128; 18],
-        redc_params_limbs: [u128; 18],
-        signature_limbs: [u128; 18]
-    ) -> Field {
-        let jwt = JWT::init(
-            data,
-            base64_decode_offset,
-            pubkey_modulus_limbs,
-            redc_params_limbs,
-            signature_limbs,
-        );
-
-        jwt.verify();
-
-        // Verify `email_verified` claim value is true
-        jwt.assert_claim_bool(
-            "email_verified".as_bytes(), 
-            true
+        verification_key : [Field; HONK_VK_SIZE], 
+        proof: [Field; HONK_PROOF_SIZE],// 93 ultraplonk | ultrahonk
+        public_inputs : [Field; 18], // 18 public inputs for each quest
+    ) {
+        std::verify_proof_with_type(
+            verification_key, 
+                proof, 
+                public_inputs, 
+                0x0,
+                HONK_IDENTIFIER
             );
-
-        // Verify `iss` (issuer) claim value is "https://accounts.google.com"
-        jwt.assert_claim_string(
-            "iss".as_bytes(), 
-            BoundedVec::<u8, 32>::from_array("https://accounts.google.com".as_bytes())
-            );
-
-        // Get the email and hash it to return as a Field
-        let email = jwt.get_claim_string::<MAX_KEY_LENGTH, MAX_EMAIL_LENGTH>("email".as_bytes());
-        
-        // Convert email string to Field for hashing
-        // Create a hashed representation by using pedersen_hash on the raw bytes
-        let mut email_bytes = [0 as Field; MAX_EMAIL_LENGTH];
-        
-        // Copy the available bytes from the email to our array (up to 32 bytes)
-        let email_len = email.len();
-        let copy_length = if email_len < 32 { email_len } else { 32 };
-        
-        for i in 0..copy_length {
-            email_bytes[i] = email[i] as Field;
-        }
-        
-        // Hash the bytes to get a Field value
-        std::hash::pedersen_hash(email_bytes)
     }
 }
 
