@@ -1,4 +1,4 @@
-import { toHex } from 'viem';
+import { padHex, toHex } from 'viem';
 import { useState, useCallback } from 'react';
 import { getQuestMetadata, submitProof } from '../../../../api/riddleQuest';
 
@@ -34,7 +34,9 @@ export function useSubmitProof() {
 
       setStatus('submitting_proof');
       const proof = toHex(proofData.proof);
-      const publicInputs = [proofData.publicInputs[0] as `0x${string}`];
+      const publicInputs = [
+        padHex(proofData.publicInputs[0] as `0x${string}`, { size: 32 }),
+      ];
       const txHash = await submitProof(
         RIDDLE_CONTRACT_ADDRESS,
         proof,
