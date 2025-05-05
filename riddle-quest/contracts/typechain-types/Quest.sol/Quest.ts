@@ -164,7 +164,7 @@ export interface Quest extends BaseContract {
   solved: TypedContractMethod<[], [boolean], "view">;
 
   submitProof: TypedContractMethod<
-    [proof: BytesLike, publicInputs: BytesLike[]],
+    [_proof: BytesLike, _publicInputs: BytesLike[]],
     [void],
     "nonpayable"
   >;
@@ -204,7 +204,7 @@ export interface Quest extends BaseContract {
   getFunction(
     nameOrSignature: "submitProof"
   ): TypedContractMethod<
-    [proof: BytesLike, publicInputs: BytesLike[]],
+    [_proof: BytesLike, _publicInputs: BytesLike[]],
     [void],
     "nonpayable"
   >;

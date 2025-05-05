@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
+import {HonkVerifier} from "./HonkVerifier.sol";
 
-interface IHonkVerifier {
-    function verify(bytes calldata proof, bytes32[] calldata publicInputs) external view returns (bool);
-}
 
 contract Quest {
     address public immutable verifier;
@@ -23,12 +21,12 @@ contract Quest {
         bounty = msg.value;
     }
 
-    function submitProof(bytes calldata proof, bytes32[] calldata publicInputs) external {
+    function submitProof(bytes calldata _proof, bytes32[] calldata _publicInputs) external {
         require(!solved, "Quest already solved");
-        require(publicInputs.length == 1, "Invalid public input length");
-        require(publicInputs[0] == solutionHash, "Public input does not match");
+        require(_publicInputs.length == 1, "Invalid public input length");
+        require(_publicInputs[0] == solutionHash, "Public input does not match");
 
-        bool ok = IHonkVerifier(verifier).verify(proof, publicInputs);
+        bool ok = HonkVerifier(verifier).verify(_proof, _publicInputs);
         emit ProofSubmitted(msg.sender, ok);
         require(ok, "Proof verification failed");
 
