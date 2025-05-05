@@ -1,11 +1,24 @@
-import { mainnet } from 'viem/chains';
-import { createPublicClient, createWalletClient, http, custom } from 'viem';
+import {
+  createPublicClient,
+  createWalletClient,
+  http,
+  custom,
+  defineChain,
+} from 'viem';
 import type { Address, Abi, EIP1193Provider } from 'viem';
 import { RPC_URL } from '../config/env';
 
+export const hardhatChain = defineChain({
+  id: 31337,
+  name: 'Hardhat',
+  network: 'hardhat',
+  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+  rpcUrls: { default: { http: ['http://127.0.0.1:8545'] } },
+});
+
 // Public client for read-only calls
 export const publicClient = createPublicClient({
-  chain: mainnet,
+  chain: hardhatChain,
   transport: http(RPC_URL!),
 });
 
@@ -14,7 +27,7 @@ const provider = typeof window !== 'undefined' ? window.ethereum : undefined;
 export const walletClient =
   provider !== undefined
     ? createWalletClient({
-        chain: mainnet,
+        chain: hardhatChain,
         transport: custom(provider as EIP1193Provider),
       })
     : undefined;
@@ -69,12 +82,11 @@ export async function writeContract({
 
   const [account] = await walletClient.getAddresses();
 
-  const { request } = await publicClient.simulateContract({
+  return await walletClient.writeContract({
     account,
     address,
     abi,
     functionName,
     args,
   });
-  return await walletClient.writeContract(request);
 }

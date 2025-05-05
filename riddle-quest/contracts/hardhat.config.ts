@@ -1,9 +1,10 @@
-import { HardhatUserConfig } from "hardhat/config";
-import "@nomicfoundation/hardhat-toolbox";
+import { HardhatUserConfig } from 'hardhat/config';
+import '@nomicfoundation/hardhat-toolbox';
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: "0.8.28", settings: {
+    version: '0.8.28',
+    settings: {
       optimizer: {
         enabled: true,
         runs: 50, // helps reduce bytecode size
@@ -12,8 +13,9 @@ const config: HardhatUserConfig = {
   },
   networks: {
     localhost: {
-      allowUnlimitedContractSize: true
-    }
+      allowUnlimitedContractSize: true,
+      chainId: 31337,
+    },
   },
 };
 
