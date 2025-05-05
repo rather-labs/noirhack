@@ -1,8 +1,8 @@
-import type { Abi, Address } from 'viem';
+import { type Abi, type Address } from 'viem';
 import { readContract, writeContract } from './web3';
-import QuestAbiJson from '../config/abi/Quest.json';
-import { ProofData } from '@aztec/bb.js';
-const QuestAbi = QuestAbiJson as unknown as Abi;
+import QuestArtifact from '../config/abi/Quest.json';
+
+const QuestAbi = QuestArtifact as unknown as Abi;
 
 export interface QuestMetadata {
   verifier: Address;
@@ -38,13 +38,13 @@ export async function getQuestMetadata(
  */
 export async function submitProof(
   address: Address,
-  proofData: ProofData,
+  proof: `0x${string}`,
   publicInputs: `0x${string}`[]
 ): Promise<`0x${string}`> {
   return await writeContract({
     address,
     abi: QuestAbi,
     functionName: 'submitProof',
-    args: [proofData.proof, publicInputs],
+    args: [proof, publicInputs],
   });
 }

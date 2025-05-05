@@ -17,16 +17,14 @@ export async function generateProof(
   try {
     // @ts-expect-error – no ideeeeaaa woaaaaaaa
     const noir = new Noir(circuit);
-    const honkBackend = new UltraHonkBackend(circuit.bytecode, { threads: 1 });
+    const honkBackend = new UltraHonkBackend(circuit.bytecode);
 
     console.log(`${fn}: generating witness… ⏳`);
     const { witness } = await noir.execute({ guess, expected_hash });
     console.log(`${fn}: witness generated ✅`);
 
     console.log(`${fn}: generating proof… ⏳`);
-    const proofData = await honkBackend.generateProof(witness, {
-      keccak: true,
-    });
+    const proofData = await honkBackend.generateProof(witness);
     console.log(`${fn}: proof generated ✅`);
 
     if (!honkBackend.verifyProof(proofData)) {
