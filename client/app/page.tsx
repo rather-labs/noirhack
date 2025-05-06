@@ -5,8 +5,8 @@ import Navbar from "./components/Navbar";
 import { useJWTInfo, getOpenIDClaims } from "./utils/auth";
 import { useSession } from "next-auth/react";
 import { generateInputs } from "noir-jwt";
-import { generateProof, verifyProof } from "./utils/noir";
-import type { InputMap, ProofData } from "@noir-lang/types";
+import { generateProof, verifyProof, castVoteOnChain, getDescription, type ProofDataForRecursion } from "./utils/noir";
+import type { InputMap } from "@noir-lang/types";
 import { Toaster } from 'react-hot-toast';
 // Define proper types for inputs and session
 type NoirInputs = Record<string, unknown>; // Replace with proper type if available
@@ -20,13 +20,39 @@ export default function Home() {
   const [showTokenInfo, setShowTokenInfo] = useState(false);
   const [showInputs, setShowInputs] = useState(false);
   const [inputs, setInputs] = useState<NoirInputs | null>(null);
-  const [proof, setProof] = useState<ProofData | null>(null);
+  const [proof, setProof] = useState<ProofDataForRecursion | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingProof, setIsGeneratingProof] = useState(false);
   const [isVerifyingProof, setIsVerifyingProof] = useState(false);
   const [verificationResult, setVerificationResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isCastingVote, setIsCastingVote] = useState(false);
+  const [candidate, setCandidate] = useState<string>("1");
+  const [identifier, setIdentifier] = useState<string>("");
+  const [copied, setCopied] = useState(false);
+  const [description, setDescription] = useState<string>("Description not fetched");
+  const [isGettingDescription, setIsGettingDescription] = useState(false);
   const jwtInfo = useJWTInfo();
+  const openIdClaims = jwtInfo?.idToken ? getOpenIDClaims(jwtInfo.idToken) : null;
+
+  // Function to handle identifier input changes
+  const handleIdentifierChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Only allow numeric input
+    if (/^\d*$/.test(value)) {
+      setIdentifier(value);
+    }
+  };
+
+  // Function to copy the hash to clipboard
+  const copyToClipboard = () => {
+    if (identifier) {
+      navigator.clipboard.writeText(identifier).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      });
+    }
+  };
 
   async function getInputs() {
     if (status === "authenticated" && session) {
@@ -116,6 +142,36 @@ export default function Home() {
     }
   }
 
+  async function castVote() {
+    if (!proof) {
+      setError("No proof available. Please generate proof first.");
+      return;
+    }
+
+    if (!identifier) {
+      setError("Field identifier not generated. Please try again.");
+      return;
+    }
+
+    try {
+      setIsCastingVote(true);
+      setError(null);
+      
+      // Convert candidate to numeric value if needed
+      const candidateValue = candidate.trim() === "" ? "1" : candidate;
+      
+      // The castVoteOnChain function will handle converting the identifier to the appropriate type
+      await castVoteOnChain(proof, Number.parseInt(identifier), Number.parseInt(candidateValue));
+      
+    } catch (err: unknown) {
+      console.error("Error casting vote:", err);
+      const errorMessage = err instanceof Error ? err.message : "Failed to cast vote";
+      setError(errorMessage);
+    } finally {
+      setIsCastingVote(false);
+    }
+  }
+
   const handleShowToken = () => {
     setShowTokenInfo(!showTokenInfo);
   };
@@ -134,7 +190,22 @@ export default function Home() {
     }
   };
 
-  const openIdClaims = jwtInfo?.idToken ? getOpenIDClaims(jwtInfo.idToken) : null;
+  async function handleGetDescription() {
+    try {
+      setIsGettingDescription(true);
+      setError(null);
+      const result = await getDescription();
+      if (result) {
+        setDescription(result.toString());
+      }
+    } catch (err: unknown) {
+      console.error("Error getting description:", err);
+      const errorMessage = err instanceof Error ? err.message : "Failed to get description";
+      setError(errorMessage);
+    } finally {
+      setIsGettingDescription(false);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -153,6 +224,14 @@ export default function Home() {
               
               {session && (
                 <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+                  <button
+                    type="button"
+                    onClick={handleGetDescription}
+                    disabled={isGettingDescription}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 disabled:opacity-50"
+                  >
+                    {isGettingDescription ? "Getting Description..." : "Get Description"}
+                  </button>
                   <button
                     type="button"
                     onClick={handleShowToken}
@@ -179,18 +258,90 @@ export default function Home() {
                     </button>
                   )}
                   {proof && (
-                    <button
-                      type="button"
-                      onClick={verifyNoirProof}
-                      disabled={isVerifyingProof}
-                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-                    >
-                      {isVerifyingProof ? "Verifying Proof..." : "Verify Proof"}
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        onClick={verifyNoirProof}
+                        disabled={isVerifyingProof}
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                      >
+                        {isVerifyingProof ? "Verifying Proof..." : "Verify Proof"}
+                      </button>
+                      
+                      <button
+                        type="button"
+                        onClick={castVote}
+                        disabled={isCastingVote}
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50"
+                      >
+                        {isCastingVote ? "Casting Vote..." : "Cast Vote On-Chain"}
+                      </button>
+                    </>
                   )}
                 </div>
               )}
             </div>
+
+            <div className="mt-6 p-4 bg-gray-100 rounded-md">
+              <p className="text-gray-700">{description}</p>
+            </div>
+
+            {proof && (
+              <div className="mt-6 w-full max-w-sm mx-auto space-y-4">
+                <div>
+                  <label htmlFor="identifier" className="block text-sm font-medium text-gray-700">
+                    Field Identifier
+                  </label>
+                  <div className="mt-1 flex rounded-md shadow-sm">
+                    <input
+                      type="text"
+                      name="identifier"
+                      id="identifier"
+                      className="font-mono block w-full rounded-md border border-gray-200 px-3 py-2 shadow-sm bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm rounded-r-none"
+                      value={identifier}
+                      onChange={handleIdentifierChange}
+                      placeholder="Enter an unsigned integer"
+                    />
+                    <button
+                      type="button"
+                      onClick={copyToClipboard}
+                      className="inline-flex items-center px-3 py-2 border border-l-0 border-gray-200 bg-gray-50 text-gray-500 rounded-r-md hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      aria-label="Copy to clipboard"
+                    >
+                      {copied ? (
+                        <span className="text-green-500">✓</span>
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                          <title>Copy to clipboard</title>
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Enter an unsigned integer that will be used to identify your vote on the blockchain.
+                    This value must be a positive whole number.
+                  </p>
+                </div>
+                
+                <div>
+                  <label htmlFor="candidate" className="block text-sm font-medium text-gray-700">
+                    Candidate ID
+                  </label>
+                  <div className="mt-1 flex rounded-md shadow-sm">
+                    <input
+                      type="text"
+                      name="candidate"
+                      id="candidate"
+                      className="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                      placeholder="Enter candidate ID (e.g. 1)"
+                      value={candidate}
+                      onChange={(e) => setCandidate(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
 
             {showTokenInfo && jwtInfo && (
               <div className="mt-6 bg-white shadow overflow-hidden sm:rounded-lg">

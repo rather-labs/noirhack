@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   transpilePackages: [
     "@aztec/bb.js",
+    "@aztec/stdlib",
     "@noir-lang/noir_js",
     "@noir-lang/noir_wasm",
     "@noir-lang/types"

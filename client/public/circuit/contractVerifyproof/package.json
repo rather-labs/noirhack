@@ -10,8 +10,8 @@
     "deploy": "npm run build && node --experimental-specifier-resolution=node ./dest/deploy.js"
   },
   "dependencies": {
-    "@aztec/accounts": "0.82.2",
-    "@aztec/aztec.js": "0.82.2",
+    "@aztec/accounts": "0.84.0",
+    "@aztec/aztec.js": "0.84.0",
     "typescript": "^5.0.0",
     "@types/node": "^20.0.0"
   }

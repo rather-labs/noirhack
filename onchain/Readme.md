@@ -27,6 +27,7 @@ Generate artifact
 aztec codegen target --outdir src/artifacts
 ```
 
+Must use node 18
 ```bash
 npm run deploy
 ```

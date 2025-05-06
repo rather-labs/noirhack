@@ -9,7 +9,7 @@ contract jwtVotingQuest {
             internal, 
             private, 
             public, 
-            //utility
+            utility
             }, storage::storage},
     };
     use dep::aztec::prelude::{AztecAddress, Map, PublicImmutable, PublicMutable};
@@ -85,15 +85,16 @@ contract jwtVotingQuest {
         }
     }
 
-    //#[utility]
+    #[utility]
     unconstrained fn get_vote(candidate: Field) -> u32 {
         storage.tally.at(candidate).read()
     }
 
-    //#[utility]
-    unconstrained fn get_description() {
+    #[utility]
+    unconstrained fn get_description() -> str<8> {
         let votes_needed = storage.quest_objective.read();   
-        println(f"Voting quest: You have to get {votes_needed} votes gain the quest");
+        //f"Voting quest: You have to get {votes_needed} votes gain the quest")
+        "HOLAHOLA"
     }
 
     #[public]
@@ -110,7 +111,7 @@ contract jwtVotingQuest {
         public_inputs : [Field; 18], // 18 public inputs for each quest
     ) {
         std::verify_proof_with_type(
-            verification_key, 
+                verification_key, 
                 proof, 
                 public_inputs, 
                 0x0,

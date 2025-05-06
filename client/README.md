@@ -35,6 +35,23 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
+## Casting Votes On-Chain
+
+To enable the on-chain voting functionality, you need to set up the following environment variables in a `.env.local` file:
+
+```bash
+# Aztec Network Configuration
+NEXT_PUBLIC_PXE_URL=http://localhost:8080
+# You need to replace this with a valid private key from your Aztec wallet
+NEXT_PUBLIC_AZTEC_PRIVATE_KEY=your_private_key_here
+# Replace with your deployed contract address
+NEXT_PUBLIC_CONTRACT_ADDRESS=your_contract_address_here
+```
+
+Make sure you:
+1. Have the Aztec sandbox running locally at the specified PXE URL
+2. Replace the placeholder private key with your actual Aztec wallet private key
+3. Deploy the contract and update the contract address in the environment variables
 
 ## Notes
 * Google uses Opaque tokens for the OAuth Access tokens, not JWT
