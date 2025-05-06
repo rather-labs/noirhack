@@ -2,4 +2,4 @@
 /* tslint:disable */
 /* eslint-disable */
 export * as honkVerifierSol from "./HonkVerifier.sol";
-export * as questSol from "./Quest.sol";
+export { Quest__factory } from "./Quest__factory";

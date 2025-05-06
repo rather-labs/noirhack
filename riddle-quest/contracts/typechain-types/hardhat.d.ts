@@ -26,10 +26,6 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IVerifier__factory>;
     getContractFactory(
-      name: "IHonkVerifier",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.IHonkVerifier__factory>;
-    getContractFactory(
       name: "Quest",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.Quest__factory>;
@@ -50,11 +46,6 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.IVerifier>;
     getContractAt(
-      name: "IHonkVerifier",
-      address: string | ethers.Addressable,
-      signer?: ethers.Signer
-    ): Promise<Contracts.IHonkVerifier>;
-    getContractAt(
       name: "Quest",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
@@ -72,10 +63,6 @@ declare module "hardhat/types/runtime" {
       name: "IVerifier",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IVerifier>;
-    deployContract(
-      name: "IHonkVerifier",
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.IHonkVerifier>;
     deployContract(
       name: "Quest",
       signerOrOptions?: ethers.Signer | DeployContractOptions
@@ -96,11 +83,6 @@ declare module "hardhat/types/runtime" {
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IVerifier>;
-    deployContract(
-      name: "IHonkVerifier",
-      args: any[],
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.IHonkVerifier>;
     deployContract(
       name: "Quest",
       args: any[],
