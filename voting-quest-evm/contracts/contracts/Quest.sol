@@ -12,6 +12,7 @@ contract VotingQuestFactory {
     mapping(uint256 => bool) public solved;
 
     uint256 public questId;
+    uint256 public lowerOpenQuestId;
 
     event QuestCreated(uint256 questId, uint256 bounty, uint256 questObjective);
     event QuestSolved(uint256 questId, bytes32 winnerSecret);
@@ -19,6 +20,7 @@ contract VotingQuestFactory {
     event BountyClaimed(uint256 questId, address winner);
     constructor(address _verifier) payable {
         questId = 0;
+        lowerOpenQuestId = 0;
         verifier = _verifier;
     }
 
@@ -43,6 +45,11 @@ contract VotingQuestFactory {
             solved[_questId] = true;
             winnerSecret[_questId] = _voteSecret;
             emit QuestSolved(_questId, _voteSecret);
+            if (_questId == lowerOpenQuestId) {
+                while (solved[lowerOpenQuestId]) {
+                    lowerOpenQuestId++;
+                }
+            }
         }
     }
 
@@ -72,13 +79,24 @@ contract VotingQuestFactory {
         emit QuestCreated(questId, _bounty, _questObjective);
     }
 
-
-    function getMetadata(uint256 _questId) external view returns (
+    function getMetadata() external view returns (
         address _verifier,
+        bytes32 _questId,
+        bool _lowerOpenQuestId
+    ) {
+        return (verifier, _questId, _lowerOpenQuestId);
+    }
+
+    function getQuestMetadata(uint256 _questId) external view returns (
         bytes32 _winnerSecret,
         uint256 _bounty,
+        uint256 _questObjective,
         bool _solved
     ) {
-        return (verifier, winnerSecret[_questId], bounties[_questId], solved[_questId]);
+        return (winnerSecret[_questId], 
+                bounties[_questId], 
+                questObjective[_questId],
+                solved[_questId]);
     }
-}
+
+}  

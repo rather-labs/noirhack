@@ -4,7 +4,7 @@ import { signIn, signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { useMetaMask } from "../../src/hooks/useMetaMask";
+import { useMetaMask } from "../hooks/useMetaMask";
 
 export default function Navbar() {
   const { data: session } = useSession();

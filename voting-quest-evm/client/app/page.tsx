@@ -5,11 +5,13 @@ import Navbar from "./components/Navbar";
 import { useJWTInfo, getOpenIDClaims } from "./utils/auth";
 import { useSession } from "next-auth/react";
 import { generateInputs } from "noir-jwt";
-import { generateProof, castVoteOnChain, type ProofDataForRecursion } from "./utils/noir";
-import type { InputMap } from "@noir-lang/types";
+import { generateProof } from "./utils/noir";
+import type { InputMap, ProofData } from "@noir-lang/types";
 import { Toaster } from 'react-hot-toast';
+import ContractInteraction from "./components/ContractInteraction";
+
 // Define proper types for inputs and session
-type NoirInputs = Record<string, unknown>; // Replace with proper type if available
+type NoirInputs = InputMap;
 interface ExtendedSession {
   idToken?: string;
   [key: string]: unknown;
@@ -20,26 +22,13 @@ export default function Home() {
   const [showTokenInfo, setShowTokenInfo] = useState(false);
   const [showInputs, setShowInputs] = useState(false);
   const [inputs, setInputs] = useState<NoirInputs | null>(null);
-  const [proof, setProof] = useState<ProofDataForRecursion | null>(null);
+  const [proof, setProof] = useState<ProofData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingProof, setIsGeneratingProof] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isCastingVote, setIsCastingVote] = useState(false);
-  const [candidate, setCandidate] = useState<string>("1");
-  const [identifier, setIdentifier] = useState<string>("");
-  const [copied, setCopied] = useState(false);
   const jwtInfo = useJWTInfo();
   const openIdClaims = jwtInfo?.idToken ? getOpenIDClaims(jwtInfo.idToken) : null;
 
-  // Function to copy the hash to clipboard
-  const copyToClipboard = () => {
-    if (identifier) {
-      navigator.clipboard.writeText(identifier).then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      });
-    }
-  };
 
   async function getInputs() {
     if (status === "authenticated" && session) {
@@ -106,38 +95,6 @@ export default function Home() {
       setError(errorMessage);
     } finally {
       setIsGeneratingProof(false);
-    }
-  }
-
-  async function castVote() {
-    if (!proof) {
-      setError("No proof available. Please generate proof first.");
-      return;
-    }
-
-    if (!identifier) {
-      // Generate a random identifier if none is provided
-      const randomId = Math.floor(Math.random() * 1000000).toString();
-      setIdentifier(randomId);
-      return;
-    }
-
-    try {
-      setIsCastingVote(true);
-      setError(null);
-      
-      // Convert candidate to numeric value if needed
-      const candidateValue = candidate.trim() === "" ? "1" : candidate;
-      
-      // The castVoteOnChain function will handle converting the identifier to the appropriate type
-      await castVoteOnChain(proof, Number.parseInt(identifier), Number.parseInt(candidateValue));
-      
-    } catch (err: unknown) {
-      console.error("Error casting vote:", err);
-      const errorMessage = err instanceof Error ? err.message : "Failed to cast vote";
-      setError(errorMessage);
-    } finally {
-      setIsCastingVote(false);
     }
   }
 
@@ -239,64 +196,16 @@ export default function Home() {
                 <div className="bg-gray-100 p-4 rounded">
                   <p>✅ Proof has been generated successfully!</p>
                 </div>
-                
-                {/* Cast Vote Section */}
-                <div className="mt-6 bg-white p-6 rounded-lg shadow-md">
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">Cast Your Vote</h3>
-                  
-                  <div className="mb-4">
-                    <label htmlFor="candidate" className="block text-sm font-medium text-gray-700 mb-1">
-                      Choose a candidate (1-10):
-                    </label>
-                    <input
-                      type="number"
-                      id="candidate"
-                      name="candidate"
-                      min="1"
-                      max="10"
-                      value={candidate}
-                      onChange={(e) => setCandidate(e.target.value)}
-                      className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:w-1/3 sm:text-sm border-gray-300 rounded-md"
-                    />
-                  </div>
-                  
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mb-6">
-                    <button
-                      type="button"
-                      onClick={castVote}
-                      disabled={isCastingVote || !proof}
-                      className="mt-3 sm:mt-0 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
-                    >
-                      {isCastingVote ? "Casting Vote..." : "Cast Vote"}
-                    </button>
-                  </div>
-                  
-                  {/* Field Identifier Section */}
-                  {identifier && (
-                    <div className="mt-4 p-4 bg-gray-50 rounded-md border border-gray-200">
-                      <div className="flex justify-between items-center">
-                        <label htmlFor="field-identifier" className="block text-sm font-medium text-gray-700">
-                          Your Field Identifier:
-                        </label>
-                        <button
-                          type="button"
-                          onClick={copyToClipboard}
-                          className="ml-2 inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                        >
-                          {copied ? "Copied!" : "Copy"}
-                        </button>
-                      </div>
-                      <div className="mt-1 text-sm text-gray-900 font-mono bg-gray-100 p-2 rounded" id="field-identifier">
-                        {identifier}
-                      </div>
-                      <p className="mt-2 text-xs text-gray-500">
-                        This identifier allows you to find your vote on-chain.
-                      </p>
-                    </div>
-                  )}
-                </div>
               </div>
             )}
+          </div>
+          
+          {/* Contract Interaction Section */}
+          <div className="mt-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              Contract Interaction
+            </h2>
+            <ContractInteraction proof={proof} />
           </div>
         </div>
       </main>
