@@ -4,9 +4,11 @@ import { useState } from 'react'
 import { useReadContract, useWriteContract } from 'wagmi'
 import toast from 'react-hot-toast'
 import type { ProofData } from '@noir-lang/types'
+import { padHex, toHex } from 'viem';
 
 // ABI for the VotingQuestFactory contract
 import votingQuestFactory from '@/public/contracts/VotingQuestFactory.json' assert { type: 'json' };
+import { keccak256 } from 'viem'
 
 const votingQuestFactoryABI = votingQuestFactory.abi
 
@@ -19,8 +21,10 @@ export default function ContractInteraction({ proof }: ContractInteractionProps)
   const [questIdToSolve, setQuestIdToSolve] = useState<string>('0')
   const [bounty, setBounty] = useState<string>('0')
   const [questIdToQuery, setQuestIdToQuery] = useState<string>('0')
-  const [secretToSubmit, setSecretToSubmit] = useState<string>('')
+  const [secretToSubmit, setSecretToSubmit] = useState<string>('0x')
   const [candidateToVoteFor, setCandidateToVoteFor] = useState<string>('0')
+  const [questIdToClaim, setQuestIdToClaim] = useState<string>('0')
+  const [secretToClaim, setSecretToClaim] = useState<string>('0x')
 
   const contractAddress = process.env.NEXT_PUBLIC_VOTING_QUEST_FACTORY_ADDRESS 
   
@@ -57,6 +61,7 @@ export default function ContractInteraction({ proof }: ContractInteractionProps)
 
   const handleCreateQuest = async () => {
     try {
+      console.log("contractAddress", contractAddress as `0x${string}`)
       const bountyBigInt = BigInt(bounty || '0')
       const objectiveBigInt = BigInt(questObjective || '1')
       await writeContractAsync({ 
@@ -67,6 +72,7 @@ export default function ContractInteraction({ proof }: ContractInteractionProps)
      })
     } catch (error) {
       toast.error(writeError?.message || 'Failed to create quest. Please check your inputs.')
+      console.error(error)
     }
   }
 
@@ -77,39 +83,44 @@ export default function ContractInteraction({ proof }: ContractInteractionProps)
     }
 
     try {
-      const objectiveBigInt = BigInt(questObjective || '1')
-      const candidateBigInt = BigInt(candidateToVoteFor || '0')
-      
+      const hashedSecretToSubmit = keccak256(secretToSubmit as `0x${string}`)
+      const candidateToVoteForBigInt = BigInt(candidateToVoteFor || '0')
+      console.log("hashedSecretToSubmit", hashedSecretToSubmit)
+      console.log("toHex(proof.proof)", toHex(proof.proof))
+      console.log("proof.proof", proof.proof)
+      console.log("proof.proof 2", `0x${Buffer.from(proof.proof).toString('hex')}`)
       await writeContractAsync({ 
         abi: votingQuestFactoryABI,
         address: contractAddress as `0x${string}`,
         functionName: 'submitVote',
-        args: [proof, candidateBigInt, objectiveBigInt],
+        args: [
+          //toHex(proof.proof), 
+          `0x${Buffer.from(proof.proof).toString('hex')}`,
+          proof.publicInputs,
+          //proof.publicInputs.map((input) => padHex(input as `0x${string}`, { size: 32 })),
+          questIdToSolve, 
+          candidateToVoteForBigInt, 
+          hashedSecretToSubmit 
+        ],
      })
     } catch (error) {
       toast.error('Failed to submit vote. Please check your inputs and ensure you have a valid proof.')
       console.error(error)
     }
   }
-  
-  const handleGetMetadata = async () => {
-    console.log('refetching metadata')
-    console.log("questMetadata",questMetadata)
-    console.log("contractAddress",contractAddress)
-    await refetchMetadata()
-    console.log("isSuccessMetadata",isSuccessMetadata)
-    console.log("metadataError",metadataError)
-    console.log("questMetadata post refetch",questMetadata)
-  }
 
-  const handleGetQuestMetadata = async () => {
-    console.log('refetching quest metadata')
-    console.log("questMetadata",questMetadata)
-    console.log("contractAddress",contractAddress)
-    await refetchQuestMetadata()
-    console.log("questMetadataError",questMetadataError)
-    console.log("isSuccessQuestMetadata",isSuccessQuestMetadata)
-    console.log("questMetadata post refetch",questMetadata)
+  const handleClaimBounty = async () => {
+    try {
+      await writeContractAsync({
+        abi: votingQuestFactoryABI,
+        address: contractAddress as `0x${string}`,
+        functionName: 'claimBounty',
+        args: [questIdToClaim, secretToClaim],
+     })
+    } catch (error) {
+      toast.error('Failed to claim bounty. Please check your inputs.')
+      console.error(error)
+    }
   }
 
   // Format metadata response for display
@@ -118,13 +129,17 @@ export default function ContractInteraction({ proof }: ContractInteractionProps)
     
     // Extract values from the tuple
     const [winnerSecret, questBounty, questObjective, isSolved] = questMetadata as [string, bigint, bigint, boolean]
+
+
+    if (!questObjective) return 'No quest found with this ID'
+    
     
     return (
       <div>
-        <p><strong>Winner Secret:</strong> {winnerSecret}</p>
         <p><strong>Bounty:</strong> {questBounty.toString()}</p>
         <p><strong>Quest Objective:</strong> {questObjective.toString()}</p>
-        <p><strong>Solved:</strong> {isSolved ? 'Yes' : 'No'}</p>
+        {isSolved ? <p><strong>Quest Solved</strong></p> : <p><strong>Quest still open</strong></p>}
+        {isSolved && <p><strong>Winner Secret:</strong> {winnerSecret}</p>}
       </div>
     )
   }
@@ -133,13 +148,14 @@ export default function ContractInteraction({ proof }: ContractInteractionProps)
     if (!metadata) return 'No metadata available'
     
     // Extract values from the tuple
-    const [verifier, questId, lowerOpenQuestId] = metadata as [string, string, bigint, boolean]
+    console.log("metadata", metadata)
+    const [verifier, questId, lowerOpenQuestId] = metadata as [string, number, number]
     
     return (
       <div>
         <p><strong>Verifier:</strong> {verifier}</p>
-        <p><strong>Current Quest ID:</strong> {questId.toString()}</p>
-        <p><strong>Lower Open Quest ID:</strong> {lowerOpenQuestId.toString()}</p>
+        <p><strong>Current Quest ID:</strong> {questId}</p>
+        <p><strong>Lower Open Quest ID:</strong> {lowerOpenQuestId}</p>
       </div>
     )
   }
@@ -147,149 +163,193 @@ export default function ContractInteraction({ proof }: ContractInteractionProps)
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
       <h2 className="text-xl font-semibold mb-4">Voting Quest Contract Interaction</h2>
-      
-      <div className="mb-6">
-        <h3 className="text-lg font-medium mb-2">Create New Quest</h3>
-        <div className="space-y-3">
-          <div>
-            <label htmlFor="questObjective" className="block text-sm font-medium text-gray-700 mb-1">
-              Quest Objective:
-            </label>
-            <input
-              type="number"
-              id="questObjective"
-              value={questObjective}
-              onChange={(e) => setQuestObjective(e.target.value)}
-              className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:w-1/3 sm:text-sm border-gray-300 rounded-md"
-              min="1"
-            />
+      <div className="flex flex-wrap gap-6">
+        <div className="flex-1 min-w-[300px]">
+          <h3 className="text-lg font-medium mb-2">Create New Quest</h3>
+          <div className="space-y-3">
+            <div>
+              <label htmlFor="questObjective" className="block text-sm font-medium text-gray-700 mb-1">
+                Quest Objective:
+              </label>
+              <input
+                type="number"
+                id="questObjective"
+                value={questObjective}
+                onChange={(e) => setQuestObjective(e.target.value)}
+                className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:w-1/3 sm:text-sm border-gray-300 rounded-md"
+                min="1"
+              />
+            </div>
+            <div>
+              <label htmlFor="bounty" className="block text-sm font-medium text-gray-700 mb-1">
+                Bounty (in wei):
+              </label>
+              <input
+                type="number"
+                id="bounty"
+                value={bounty}
+                onChange={(e) => setBounty(e.target.value)}
+                className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:w-1/3 sm:text-sm border-gray-300 rounded-md"
+                min="0"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleCreateQuest}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+            >
+              {isPending ? 'Waiting transaction...' : 'Create Quest'}
+            </button>
           </div>
-          <div>
-            <label htmlFor="bounty" className="block text-sm font-medium text-gray-700 mb-1">
-              Bounty (in wei):
-            </label>
-            <input
-              type="number"
-              id="bounty"
-              value={bounty}
-              onChange={(e) => setBounty(e.target.value)}
-              className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:w-1/3 sm:text-sm border-gray-300 rounded-md"
-              min="0"
-            />
+        </div>
+
+        <div className="flex-1 min-w-[300px]">
+          <h3 className="text-lg font-medium mb-2">Solve Quest</h3>
+          <div className="space-y-3">
+            <div>
+              <label htmlFor="bounty" className="block text-sm font-medium text-gray-700 mb-1">
+                Quest ID to Solve:
+              </label>
+              <input
+                type="number"
+                id="questIdToSolve"
+                value={questIdToSolve}
+                onChange={(e) => setQuestIdToSolve(e.target.value)}
+                className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:w-1/3 sm:text-sm border-gray-300 rounded-md"
+                min="0"
+              />
+            </div>
+            <div>
+              <label htmlFor="secretToSubmit" className="block text-sm font-medium text-gray-700 mb-1">
+                Secret to submit for the quest (hex):
+              </label>
+              <input
+                type="text"
+                id="secretToSubmit"
+                value={secretToSubmit}
+                onChange={(e) => setSecretToSubmit(e.target.value.startsWith('0x') ? e.target.value : `0x${e.target.value.replace(/[^0-9a-fA-F]/g, '')}`)}
+                placeholder="0x..."
+                pattern="^0x[0-9a-fA-F]*$"
+                className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:w-1/3 sm:text-sm border-gray-300 rounded-md"
+              />
+            </div>
+            <div>
+              <label htmlFor="bounty" className="block text-sm font-medium text-gray-700 mb-1">
+                Candidate to vote for:
+              </label>
+              <input
+                type="number"
+                id="candidateToVoteFor"
+                value={candidateToVoteFor}
+                onChange={(e) => setCandidateToVoteFor(e.target.value)}
+                className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:w-1/3 sm:text-sm border-gray-300 rounded-md"
+                min="0"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleSolveQuest}
+              disabled={!proof || isPending}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+            >
+              {isPending ? 'Waiting transaction...' : 'Solve Quest'}
+            </button>
+            {!proof && (
+              <p className="text-sm text-red-600 mt-2">
+                Please generate a proof first before submitting a vote.
+              </p>
+            )}
           </div>
-          <button
-            type="button"
-            onClick={handleCreateQuest}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-          >
-            {isPending ? 'Waiting transaction...' : 'Create Quest'}
-          </button>
         </div>
       </div>
 
       <div className="mb-6">
-        <h3 className="text-lg font-medium mb-2">Solve Quest</h3>
-        <div className="space-y-3">
-          <div>
-            <label htmlFor="bounty" className="block text-sm font-medium text-gray-700 mb-1">
-              Quest ID to Solve:
-            </label>
-            <input
-              type="number"
-              id="questIdToSolve"
-              value={questIdToSolve}
-              onChange={(e) => setQuestIdToSolve(e.target.value)}
-              className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:w-1/3 sm:text-sm border-gray-300 rounded-md"
-              min="0"
-            />
+          <h3 className="text-lg font-medium mb-2">Claim bounty</h3>
+          <div className="space-y-3">
+            <div>
+              <label htmlFor="bounty" className="block text-sm font-medium text-gray-700 mb-1">
+                Quest ID to claim bounty:
+              </label>
+              <input
+                type="number"
+                id="questIdToClaim"
+                value={questIdToClaim}
+                onChange={(e) => setQuestIdToClaim(e.target.value)}
+                className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:w-1/3 sm:text-sm border-gray-300 rounded-md"
+                min="0"
+              />
+            </div>
+            <div>
+              <label htmlFor="secretToClaim" className="block text-sm font-medium text-gray-700 mb-1">
+                Secret to claim bounty:
+              </label>
+              <input
+                type="text"
+                id="secretToClaim"
+                value={secretToClaim}
+                onChange={(e) => setSecretToClaim(e.target.value.startsWith('0x') ? e.target.value : `0x${e.target.value.replace(/[^0-9a-fA-F]/g, '')}`)}
+                placeholder="0x..."
+                pattern="^0x[0-9a-fA-F]*$"
+                className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:w-1/3 sm:text-sm border-gray-300 rounded-md"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleClaimBounty}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+            >
+              {isPending ? 'Waiting transaction...' : 'Claim Bounty'}
+            </button>
           </div>
-          <div>
-            <label htmlFor="bounty" className="block text-sm font-medium text-gray-700 mb-1">
-              Secret to submit for the quest:
-            </label>
-            <input
-              type="text"
-              id="secretToSubmit"
-              value={secretToSubmit}
-              onChange={(e) => setSecretToSubmit(e.target.value)}
-              className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:w-1/3 sm:text-sm border-gray-300 rounded-md"
-              min="0"
-            />
-          </div>
-          <div>
-            <label htmlFor="bounty" className="block text-sm font-medium text-gray-700 mb-1">
-              Candidate to vote for:
-            </label>
-            <input
-              type="number"
-              id="candidateToVoteFor"
-              value={candidateToVoteFor}
-              onChange={(e) => setCandidateToVoteFor(e.target.value)}
-              className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:w-1/3 sm:text-sm border-gray-300 rounded-md"
-              min="0"
-            />
-          </div>
-          <button
-            type="button"
-            onClick={handleSolveQuest}
-            disabled={!proof || isPending}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-          >
-            {isPending ? 'Waiting transaction...' : 'Solve Quest'}
-          </button>
-          {!proof && (
-            <p className="text-sm text-red-600 mt-2">
-              Please generate a proof first before submitting a vote.
-            </p>
-          )}
         </div>
-      </div>
 
-      <div className="mb-6">
-        <h3 className="text-lg font-medium mb-2">Get Quest Factory Metadata</h3>
-        <div className="space-y-3">
-          <div>
-          {formaMetadata()}
+      <div className="flex flex-wrap gap-6">
+        <div className="flex-1 min-w-[300px]">
+          <h3 className="text-lg font-medium mb-2">Get Quest Factory Metadata</h3>
+          <div className="space-y-3">
+            <div>
+            {formaMetadata()}
+            </div>
+            <button
+              type="button"
+              onClick={ async () => {await refetchMetadata()}}
+              disabled={isLoadingMetadata}
+              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50"
+            >
+              {isLoadingMetadata ? 'Loading...' : 'Get Metadata'}
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={handleGetMetadata}
-            disabled={isLoadingMetadata}
-            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50"
-          >
-            {isLoadingMetadata ? 'Loading...' : 'Get Metadata'}
-          </button>
         </div>
-      </div>
 
-      <div className="mb-6">
-        <h3 className="text-lg font-medium mb-2">Get Quest Metadata</h3>
-        <div className="space-y-3">
-          <div>
-            <label htmlFor="questIdToQuery" className="block text-sm font-medium text-gray-700 mb-1">
-              Quest ID:
-            </label>
-            <input
-              type="number"
-              id="questIdToQuery"
-              value={questIdToQuery}
-              onChange={(e) => setQuestIdToQuery(e.target.value)}
-              className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:w-1/3 sm:text-sm border-gray-300 rounded-md"
-              min="0"
-            />
-          </div>
+        <div className="flex-1 min-w-[300px]">
+          <h3 className="text-lg font-medium mb-2">Get Quest Metadata</h3>
+          <div className="space-y-3">
+            <div>
+              <label htmlFor="questIdToQuery" className="block text-sm font-medium text-gray-700 mb-1">
+                Quest ID:
+              </label>
+              <input
+                type="number"
+                id="questIdToQuery"
+                value={questIdToQuery}
+                onChange={(e) => setQuestIdToQuery(e.target.value)}
+                className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:w-1/3 sm:text-sm border-gray-300 rounded-md"
+                min="0"
+              />
+            </div>
 
-          <div>
-          {formaQuestMetadata()}
+            <div>
+            {formaQuestMetadata()}
+            </div>
+            <button
+              type="button"
+              onClick={ async () => {await refetchQuestMetadata()}}
+              disabled={isLoadingQuestMetadata}
+              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50"
+            >
+              {isLoadingQuestMetadata ? 'Loading...' : 'Get Quest Metadata'}
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={handleGetQuestMetadata}
-            disabled={isLoadingQuestMetadata}
-            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50"
-          >
-            {isLoadingQuestMetadata ? 'Loading...' : 'Get Quest Metadata'}
-          </button>
         </div>
       </div>
     </div>

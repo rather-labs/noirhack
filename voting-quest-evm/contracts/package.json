@@ -1,4 +1,8 @@
 {
+  "scripts": {
+    "start": "npx hardhat node",
+    "deploy": "npx hardhat run scripts/sendETHToMetaMask.ts --network localhost && npx hardhat ignition deploy ./ignition/modules/VotingQuest.ts --network localhost --reset"
+  },
   "devDependencies": {
     "@types/node": "^22.15.2",
     "hardhat": "^2.23.0"

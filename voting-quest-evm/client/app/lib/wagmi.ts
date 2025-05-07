@@ -1,4 +1,4 @@
-import { http, createConfig, createStorage } from 'wagmi'
+import { http, createConfig } from 'wagmi'
 import { mainnet, sepolia, hardhat } from 'wagmi/chains'
 import { injected } from 'wagmi/connectors'
 
@@ -14,6 +14,5 @@ export const config = createConfig({
     [sepolia.id]: http(),
     [hardhat.id]: http('http://127.0.0.1:8545', {timeout: 10_000, retryCount: 10}),
   },
-  storage: createStorage({ storage: window.localStorage }), 
-  syncConnectedChain: true, 
+  syncConnectedChain: true,
 }) 

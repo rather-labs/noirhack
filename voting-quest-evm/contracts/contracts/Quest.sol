@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 import {JwtVerifier} from "./JwtVerifier.sol";
 
+import "hardhat/console.sol";
 contract VotingQuestFactory {
     address public immutable verifier;
     mapping(uint256 => mapping(uint256 => uint256)) public voteCandidates;
@@ -33,13 +34,18 @@ contract VotingQuestFactory {
             ) external {
         require(!solved[_questId], "Quest already solved");
         require(_publicInputs.length == 18, "Invalid public input length");
-        
-        bool ok = JwtVerifier(verifier).verify(_proof, _publicInputs);
 
+        console.log("Verifying proof");
+        
+        try JwtVerifier(verifier).verify(_proof, _publicInputs) {
+            console.log("Proof verified");
+        } catch Error(string memory reason) {
+            console.log("Proof verification failed");
+            revert(reason);
+        }
         voteCandidates[_questId][_voteCandidate]++;
         voteSecrets[_questId][_voteSecret]++;
         emit ProofSubmitted(_questId, _voteCandidate, _voteSecret);
-        require(ok, "Proof verification failed");
 
         if (voteSecrets[_questId][_voteSecret] >= questObjective[_questId]) {
             solved[_questId] = true;
@@ -76,15 +82,18 @@ contract VotingQuestFactory {
         questId++;
         bounties[questId] = _bounty;
         questObjective[questId] = _questObjective;
+        if (lowerOpenQuestId == 0) {
+            lowerOpenQuestId = questId;
+        }
         emit QuestCreated(questId, _bounty, _questObjective);
     }
 
     function getMetadata() external view returns (
         address _verifier,
-        bytes32 _questId,
-        bool _lowerOpenQuestId
+        uint256 _questId,
+        uint256 _lowerOpenQuestId
     ) {
-        return (verifier, _questId, _lowerOpenQuestId);
+        return (verifier, questId, lowerOpenQuestId);
     }
 
     function getQuestMetadata(uint256 _questId) external view returns (

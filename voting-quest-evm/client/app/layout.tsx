@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "JWT Voting",
-  description: "A voting application using JWT authentication",
+  description: "Vote using JWT proofs",
 };
 
 export default function RootLayout({
