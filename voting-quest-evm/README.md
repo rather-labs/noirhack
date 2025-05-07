@@ -1,6 +1,7 @@
 # Voting quests with EVM verification
 
 # Run hardhat
+
 Start the localchain
 ```bash
 cd contracts
@@ -20,6 +21,16 @@ Transfer tokens to contract
 npx hardhat run scripts/sendETHToMetaMask.ts --network localhost
 ```
 
+# Set client configuration variables
+
+Set this variables in local.env
+```bash
+GOOGLE_CLIENT_SECRET=
+GOOGLE_CLIENT_ID=
+NEXTAUTH_SECRET=
+VOTING_QUEST_FACTORY_ADDRESS=
+```
+
 # Run client
 
 ```bash
@@ -31,9 +42,11 @@ npm run dev
 ```
 
 # Generate a quest
+
 ```bash
 ```
 # Vote on a quest
+
 ```bash
 ```
 

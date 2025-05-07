@@ -67,7 +67,6 @@ export default function ContractInteraction({ proof }: ContractInteractionProps)
      })
     } catch (error) {
       toast.error(writeError?.message || 'Failed to create quest. Please check your inputs.')
-      console.error(error)
     }
   }
 

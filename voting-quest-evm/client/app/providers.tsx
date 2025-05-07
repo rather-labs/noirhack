@@ -1,12 +1,21 @@
 "use client";
 
 import { SessionProvider } from "next-auth/react";
-import { Web3Provider } from "./components/Web3Provider";
+import { config } from './lib/wagmi'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { WagmiProvider } from 'wagmi'
+
+const queryClient = new QueryClient()
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <SessionProvider>
-      <Web3Provider>{children}</Web3Provider>
-    </SessionProvider>
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        <SessionProvider>
+          {children}
+        </SessionProvider>
+      </QueryClientProvider>
+    </WagmiProvider>
   );
 } 
+
