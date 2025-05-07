@@ -215,8 +215,8 @@ export async function castVoteOnChain(proof: ProofDataForRecursion, identifier: 
     console.log("candidate", candidate)
 
     // 1)  Build the limits ― generous but within protocol max (6 M L2) …
-    const gasLimits          = new Gas(0, 6_000_000);        // DA 0, L2 6 M
-    const teardownGasLimits  = Gas.empty();                     // no teardown
+    const gasLimits          = new Gas(100_0000_000, 100_0000_000); // DA 0, L2 6 M
+    const teardownGasLimits  = new Gas(6_000_000, 6_000_000);   // no teardown
 
     // 2)  0‑fee on Sandbox.  On testnet replace 0n with e.g. 1_000_000_000n
     const maxFeesPerGas        = GasFees.empty();           // DA, L2 (wei/gas)
@@ -260,9 +260,9 @@ export async function castVoteOnChain(proof: ProofDataForRecursion, identifier: 
       candidate as FieldLike
     ).send(
       { fee : {
-        gasSettings: gasSettings as Partial<FieldsOf<GasSettings>>,
-        paymentMethod, 
-        estimateGas: false
+        gasSettings,
+        //paymentMethod, 
+        //estimateGas: false
         }
       }
     ).wait();
