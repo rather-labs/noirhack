@@ -1,5 +1,6 @@
-import { HardhatUserConfig } from 'hardhat/config';
-import '@nomicfoundation/hardhat-toolbox';
+import type { HardhatUserConfig } from 'hardhat/config';
+import '@nomicfoundation/hardhat-toolbox-viem';
+import 'hardhat-contract-sizer';
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -7,14 +8,28 @@ const config: HardhatUserConfig = {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 50, // helps reduce bytecode size
+        runs: 500, // helps reduce bytecode size
       },
+      viaIR: false,
     },
   },
+  contractSizer: {
+    alphaSort: true, // Sort contracts alphabetically
+    runOnCompile: true, // Automatically measure size after compilation
+    disambiguatePaths: false, // Show file paths for contracts with the same name
+  },
   networks: {
-    localhost: {
+    hardhat:{ 
+      chainId: 31_337,
+      mining: {
+        auto: true,
+        interval: 15_000
+      }
+    },
+    localhost: { 
+      //url: 'http://localhost:8546',
       allowUnlimitedContractSize: true,
-      chainId: 31337,
+      chainId: 31_337,
     },
   },
 };

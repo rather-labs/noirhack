@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
-import {HonkVerifier} from "./JwtVerifier.sol";
+import {JwtVerifier} from "./JwtVerifier.sol";
 
 contract VotingQuestFactory {
     address public immutable verifier;
@@ -17,8 +17,9 @@ contract VotingQuestFactory {
     event QuestSolved(uint256 questId, bytes32 winnerSecret);
     event ProofSubmitted(uint256 questId, uint256 voteCandidate, bytes32 voteSecret);
     event BountyClaimed(uint256 questId, address winner);
-    constructor() payable {
+    constructor(address _verifier) payable {
         questId = 0;
+        verifier = _verifier;
     }
 
     function submitVote(
@@ -31,7 +32,7 @@ contract VotingQuestFactory {
         require(!solved[_questId], "Quest already solved");
         require(_publicInputs.length == 18, "Invalid public input length");
         
-        bool ok = HonkVerifier(verifier).verify(_proof, _publicInputs);
+        bool ok = JwtVerifier(verifier).verify(_proof, _publicInputs);
 
         voteCandidates[_questId][_voteCandidate]++;
         voteSecrets[_questId][_voteSecret]++;

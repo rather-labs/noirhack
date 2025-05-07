@@ -31,4 +31,4 @@ dist-ssr
 *.sw?
 
 .next/
-
+typechain-types/
