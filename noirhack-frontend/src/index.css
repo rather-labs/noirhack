@@ -6,12 +6,12 @@
   --color-white: #ffffff;
   --color-gray: #d0d1d2;
 
-  --accent-riddle: #7c3aed;
-  --accent-vote: #14b8a6;
+  --color-accent-riddle: #7c3aed;
+  --color-accent-vote: #14b8a6;
 
-  --status-open: #65a30d;
-  --status-closed: #ca8a04;
-  --status-completed: #64748b;
+  --color-status-open: #65a30d;
+  --color-status-closed: #ca8a04;
+  --color-status-completed: #64748b;
 
   /* ── Typography ──────────────────────────────── */
   --font-sans: 'Inter', sans-serif;
