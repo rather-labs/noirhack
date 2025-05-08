@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity >=0.8.21;
 import {JwtVerifier} from "./JwtVerifier.sol";
 
 import "hardhat/console.sol";

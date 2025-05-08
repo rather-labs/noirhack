@@ -1,5 +1,4 @@
 import { getSession, useSession } from "next-auth/react";
-//import { decodeJwt } from 'jose';
 
 export interface CustomSessionData {
   accessToken?: string;
@@ -18,10 +17,7 @@ export async function getJWTInfo() {
 
   const customSession = session as CustomSessionData;
 
-  //const jwtInfo = decodeJwt(customSession?.idToken as string);
-
   return {
-    //...jwtInfo,
     accessToken: customSession.accessToken,
     customData: customSession.customData,
   };
@@ -49,7 +45,7 @@ export function decodeJWT(token: string) {
     const jsonPayload = decodeURIComponent(
       atob(base64)
         .split('')
-        .map(c => `%${('00' + c.charCodeAt(0).toString(16)).slice(-2)}`)
+        .map(c => `%${`00${c.charCodeAt(0).toString(16)}`.slice(-2)}`)
         .join('')
     );
     return JSON.parse(jsonPayload);

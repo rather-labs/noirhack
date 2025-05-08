@@ -4,10 +4,11 @@ import { useState } from 'react'
 import { useReadContract, useWriteContract } from 'wagmi'
 import toast from 'react-hot-toast'
 import type { ProofData } from '@noir-lang/types'
-import { padHex, toHex } from 'viem';
+import { Hex, hexToBytes, hexToString, padHex, stringToHex, toHex } from 'viem';
 
 // ABI for the VotingQuestFactory contract
 import votingQuestFactory from '@/public/contracts/VotingQuestFactory.json' assert { type: 'json' };
+import verifier from '@/public/contracts/JwtVerifier.json' assert { type: 'json' };
 import { keccak256 } from 'viem'
 
 const votingQuestFactoryABI = votingQuestFactory.abi
@@ -87,20 +88,55 @@ export default function ContractInteraction({ proof }: ContractInteractionProps)
       const candidateToVoteForBigInt = BigInt(candidateToVoteFor || '0')
       console.log("hashedSecretToSubmit", hashedSecretToSubmit)
       console.log("toHex(proof.proof)", toHex(proof.proof))
-      console.log("proof.proof", proof.proof)
-      console.log("proof.proof 2", `0x${Buffer.from(proof.proof).toString('hex')}`)
+      const proofBytes = `0x${Array.from(Object.values(proof.proof))
+        .map(n => n.toString(16).padStart(2, '0'))
+        .join('')}`;
+      console.log("proofBytes", proofBytes)
       await writeContractAsync({ 
         abi: votingQuestFactoryABI,
         address: contractAddress as `0x${string}`,
         functionName: 'submitVote',
         args: [
           //toHex(proof.proof), 
-          `0x${Buffer.from(proof.proof).toString('hex')}`,
-          proof.publicInputs,
+          proofBytes  as `0x${string}`,
+          //`0x${Buffer.from(proof.proof).toString('hex')}`,
+          //proof.publicInputs as `0x${string}`[],
           //proof.publicInputs.map((input) => padHex(input as `0x${string}`, { size: 32 })),
+          proof.publicInputs.map((input) => input as `0x${string}`),
           questIdToSolve, 
           candidateToVoteForBigInt, 
           hashedSecretToSubmit 
+        ],
+     })
+    } catch (error) {
+      toast.error('Failed to submit vote. Please check your inputs and ensure you have a valid proof.')
+      console.error(error)
+    }
+  }
+
+  const handleVerifyProof = async () => {
+    if (!proof) {
+      toast.error('No proof available. Please generate a proof first.')
+      return
+    }
+
+    try {
+      console.log("toHex(proof.proof)", toHex(proof.proof))
+      const proofBytes = `0x${Array.from(Object.values(proof.proof))
+        .map(n => n.toString(16).padStart(2, '0'))
+        .join('')}`;
+      console.log("proofBytes", proofBytes)
+      await writeContractAsync({ 
+        abi: verifier.abi,
+        address: process.env.NEXT_PUBLIC_JWT_VERIFIER_ADDRESS as `0x${string}`,
+        functionName: 'verify',
+        args: [
+          //toHex(proof.proof), 
+          proofBytes  as `0x${string}`,
+          //`0x${Buffer.from(proof.proof).toString('hex')}`,
+          //proof.publicInputs as `0x${string}`[],
+          //proof.publicInputs.map((input) => padHex(input as `0x${string}`, { size: 32 })),
+          proof.publicInputs.map((input) => input as `0x${string}`)
         ],
      })
     } catch (error) {
@@ -263,7 +299,8 @@ export default function ContractInteraction({ proof }: ContractInteractionProps)
         </div>
       </div>
 
-      <div className="mb-6">
+      <div className="flex flex-wrap gap-6">
+        <div className="flex-1 min-w-[300px]">
           <h3 className="text-lg font-medium mb-2">Claim bounty</h3>
           <div className="space-y-3">
             <div>
@@ -302,6 +339,21 @@ export default function ContractInteraction({ proof }: ContractInteractionProps)
             </button>
           </div>
         </div>
+
+
+        <div className="flex-1 min-w-[300px]">
+          <h3 className="text-lg font-medium mb-2">Verify proof on chain</h3>
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={handleVerifyProof}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+            >
+              {isPending ? 'Waiting transaction...' : 'Verify'}
+            </button>
+          </div>
+        </div>
+      </div>
 
       <div className="flex flex-wrap gap-6">
         <div className="flex-1 min-w-[300px]">

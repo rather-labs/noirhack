@@ -11,7 +11,6 @@ import { Toaster } from 'react-hot-toast';
 import ContractInteraction from "./components/ContractInteraction";
 
 // Define proper types for inputs and session
-type NoirInputs = InputMap;
 interface ExtendedSession {
   idToken?: string;
   [key: string]: unknown;
@@ -21,7 +20,7 @@ export default function Home() {
   const { data: session, status } = useSession();
   const [showTokenInfo, setShowTokenInfo] = useState(false);
   const [showInputs, setShowInputs] = useState(false);
-  const [inputs, setInputs] = useState<NoirInputs | null>(null);
+  const [inputs, setInputs] = useState<InputMap | null>(null);
   const [proof, setProof] = useState<ProofData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingProof, setIsGeneratingProof] = useState(false);

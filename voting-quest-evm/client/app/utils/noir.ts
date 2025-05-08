@@ -1,7 +1,7 @@
 'use client';
 import { Noir } from '@noir-lang/noir_js';
 import type { CompiledCircuit, InputMap, ProofData } from '@noir-lang/types';
-import { UltraHonkBackend } from '@aztec/bb.js';
+import { UltraHonkBackend, splitHonkProof, reconstructHonkProof } from '@aztec/bb.js';
 import circuitJSON from '@/public/circuit/jwtnoir/target/jwtnoir.json' assert { type: 'json' };
 import toast from "react-hot-toast";
 
@@ -14,8 +14,6 @@ export type Circuit = {
 export async function generateProof(inputs: InputMap): Promise<ProofData> {
   try {
     toast.loading("Getting circuit... ⏳", {duration: 1_000_000, id: "toast-message"});
-    // Fails due to fetch on window not being defined
-    //const circuit = (await getCircuit()).program as CompiledCircuit;
 	  const circuit = circuitJSON as CompiledCircuit;
     toast.remove("toast-message");
 
@@ -34,15 +32,29 @@ export async function generateProof(inputs: InputMap): Promise<ProofData> {
     toast.remove("toast-message");
     
     toast.loading("Generating proof... ⏳", {duration: 1_000_000, id: "toast-message"});
-    const proof = await backend.generateProof(witness);
+    const proof = await backend.generateProof(witness, { keccak: true });
     console.log("proof", proof)
     toast.remove("toast-message");
 
     toast.loading("Verifying proof... ⏳", {duration: 1_000_000, id: "toast-message"});
-    const verified = await backend.verifyProof(proof);
+    const verified = await backend.verifyProof(proof, { keccak: true });
     console.log("verified", verified)
     toast.remove("toast-message");
-    return proof;
+    if (verified) {
+      toast.success("Proof verified! 🎉", {duration: 15_000, id: "toast-message"});
+    } else {
+      toast.error("Proof verification failed! 🚫", {duration: 15_000, id: "toast-message"});
+    }
+
+    //const splitProof = splitHonkProof(proof.proof, 18);
+    //console.log("splitProof", splitProof)
+    //const reconstructedProof = reconstructHonkProof(splitProof.publicInputs, splitProof.proof);
+    //console.log("reconstructedProof", reconstructedProof)
+    
+    return {
+      proof: proof.proof,
+      publicInputs: proof.publicInputs
+    }
   } catch (error: unknown) {
     toast.remove("toast-message");
     toast.error("Failed to generate proof! 🚫", {duration: 10_000, id: "proof-generation-failed"});
@@ -50,27 +62,3 @@ export async function generateProof(inputs: InputMap): Promise<ProofData> {
     throw new Error(`Failed to generate proof: ${errorMessage}`);
   }
 }  
-
-// Add this new function for casting votes
-export async function castVoteOnChain(inputs: InputMap, identifier: number, candidate: number) {
-  try {
-    // Get the proof artifacts that will be passed to the contract
-    toast.loading("Generating proof artifacts... ⏳", {duration: 1_000_000, id: "toast-message"});
-    const proof = await generateProof(inputs);
-    toast.remove("toast-message");
-    
-    // Convert identifier to number if it's a string
-    const numericIdentifier = typeof identifier === 'string' ? Number(identifier) : identifier;
-    // Wait for transaction to be processed
-    //await tx.wait();
-    
-    toast.remove("toast-message");
-    toast.success("Vote cast successfully! 🎉", {duration: 5000});
-    
-    return true;
-  } catch (error: unknown) {
-    toast.remove("toast-message");
-    toast.error(`Failed to cast vote: ${error instanceof Error ? error.message : String(error)}`, {duration: 10000});
-    throw error;
-  }
-}
