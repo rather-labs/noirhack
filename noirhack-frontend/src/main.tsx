@@ -8,7 +8,8 @@ import {
 import App from './App';
 import './index.css';
 import Home from './pages/Home';
-import Quests from './pages/Quests';
+import QuestsPage from './pages/Quests';
+import RiddleDetail from './pages/RiddleDetail';
 
 const routes: RouteObject[] = [
   {
@@ -16,7 +17,8 @@ const routes: RouteObject[] = [
     element: <App />,
     children: [
       { index: true, element: <Home /> },
-      { path: 'quests', element: <Quests /> },
+      { path: 'quests', element: <QuestsPage /> },
+      { path: 'quests/:id', element: <RiddleDetail /> },
     ],
   },
 ];
