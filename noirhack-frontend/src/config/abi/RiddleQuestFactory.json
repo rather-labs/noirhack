@@ -7,48 +7,36 @@
         "type": "address"
       }
     ],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "constructor"
   },
   {
     "anonymous": false,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": false,
         "internalType": "uint256",
         "name": "questId",
         "type": "uint256"
       },
       {
-        "indexed": true,
-        "internalType": "address",
-        "name": "solver",
-        "type": "address"
-      },
-      {
         "indexed": false,
-        "internalType": "bool",
-        "name": "ok",
-        "type": "bool"
+        "internalType": "address",
+        "name": "winner",
+        "type": "address"
       }
     ],
-    "name": "ProofAttempt",
+    "name": "BountyClaimed",
     "type": "event"
   },
   {
     "anonymous": false,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": false,
         "internalType": "uint256",
         "name": "questId",
         "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "title",
-        "type": "string"
       },
       {
         "indexed": false,
@@ -58,9 +46,9 @@
       },
       {
         "indexed": false,
-        "internalType": "uint256",
-        "name": "deadline",
-        "type": "uint256"
+        "internalType": "bytes32",
+        "name": "solutionHash",
+        "type": "bytes32"
       }
     ],
     "name": "QuestCreated",
@@ -70,21 +58,9 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "questId",
-        "type": "uint256"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "solver",
-        "type": "address"
-      },
-      {
         "indexed": false,
         "internalType": "uint256",
-        "name": "bounty",
+        "name": "questId",
         "type": "uint256"
       }
     ],
@@ -94,15 +70,73 @@
   {
     "inputs": [
       {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "bounties",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "string",
-        "name": "_title",
+        "name": "_riddle",
         "type": "string"
       },
       {
-        "internalType": "string",
-        "name": "_prompt",
-        "type": "string"
+        "internalType": "bytes32",
+        "name": "_solutionHash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "createRiddle",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getMetadata",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "_verifier",
+        "type": "address"
       },
+      {
+        "internalType": "uint256",
+        "name": "_questId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_lowerOpenQuestId",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_questId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getQuestMetadata",
+    "outputs": [
       {
         "internalType": "bytes32",
         "name": "_solutionHash",
@@ -110,60 +144,18 @@
       },
       {
         "internalType": "uint256",
-        "name": "_deadline",
+        "name": "_bounty",
         "type": "uint256"
-      }
-    ],
-    "name": "createRiddle",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "questId",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "questId",
-        "type": "uint256"
-      }
-    ],
-    "name": "getQuest",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "title",
-        "type": "string"
       },
       {
         "internalType": "string",
-        "name": "prompt",
+        "name": "_riddle",
         "type": "string"
       },
       {
-        "internalType": "uint256",
-        "name": "bounty",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "deadline",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint8",
-        "name": "_status",
-        "type": "uint8"
-      },
-      {
-        "internalType": "address",
-        "name": "winner",
-        "type": "address"
+        "internalType": "bool",
+        "name": "_solved",
+        "type": "bool"
       }
     ],
     "stateMutability": "view",
@@ -171,7 +163,20 @@
   },
   {
     "inputs": [],
-    "name": "nextQuestId",
+    "name": "lowerOpenQuestId",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "questId",
     "outputs": [
       {
         "internalType": "uint256",
@@ -186,16 +191,16 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "questId",
+        "name": "",
         "type": "uint256"
       }
     ],
-    "name": "status",
+    "name": "riddle",
     "outputs": [
       {
-        "internalType": "uint8",
+        "internalType": "string",
         "name": "",
-        "type": "uint8"
+        "type": "string"
       }
     ],
     "stateMutability": "view",
@@ -205,16 +210,54 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "questId",
+        "name": "",
         "type": "uint256"
-      },
+      }
+    ],
+    "name": "solutionHash",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "solved",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
       {
         "internalType": "bytes",
-        "name": "proof",
+        "name": "_proof",
         "type": "bytes"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_questId",
+        "type": "uint256"
       }
     ],
-    "name": "submitProof",
+    "name": "submitGuess",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

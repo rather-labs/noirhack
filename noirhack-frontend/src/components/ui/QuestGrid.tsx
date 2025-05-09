@@ -1,7 +1,7 @@
 import QuestCard, { type QuestType, type QuestStatus } from './QuestCard';
 
 export interface Quest {
-  id: string | number;
+  id: number;
   type: QuestType;
   status: QuestStatus;
   title: string;

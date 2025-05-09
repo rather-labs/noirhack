@@ -1,12 +1,21 @@
-import { createConfig, http } from 'wagmi';
-import { hardhat, sepolia } from 'wagmi/chains';
-import { metaMask } from '@wagmi/connectors';
+import { http, createConfig } from 'wagmi';
+import { mainnet, sepolia, hardhat } from 'wagmi/chains';
+import { injected } from 'wagmi/connectors';
 
 export const wagmiConfig = createConfig({
-  chains: [hardhat, sepolia],
+  chains: [mainnet, sepolia, hardhat],
+  connectors: [
+    injected({
+      target: 'metaMask',
+    }),
+  ],
   transports: {
-    [hardhat.id]: http(),
+    [mainnet.id]: http(),
     [sepolia.id]: http(),
+    [hardhat.id]: http('http://127.0.0.1:8545', {
+      timeout: 10_000,
+      retryCount: 10,
+    }),
   },
-  connectors: [metaMask()],
+  syncConnectedChain: true,
 });
