@@ -3,7 +3,9 @@
     "start": "npx hardhat node",
     "transfer": "npx hardhat run scripts/sendETHtoMetaMask.ts --network localhost",
     "deploy:riddle": "npx hardhat ignition deploy ./ignition/modules/RiddleQuest.ts --network localhost --reset",
-    "deploy": "npm run transfer && npm run deploy:riddle"
+    "copy:factory": "cp artifacts/contracts/RiddleQuestFactory.sol/RiddleQuestFactory.json ../frontend/src/config/abi/RiddleQuestFactory.json",
+    "copy:verifier": "cp artifacts/contracts/RiddleVerifier.sol/HonkVerifier.json ../frontend/src/config/abi/HonkVerifier.json",
+    "deploy": "npm run transfer && npm run deploy:riddle && npm run copy:factory && npm run copy:verifier"
   },
   "devDependencies": {
     "@types/node": "^22.15.2",
