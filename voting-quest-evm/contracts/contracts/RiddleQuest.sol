@@ -5,7 +5,6 @@ interface IVerifier {
     function verify(bytes calldata _proof, bytes32[] calldata _publicInputs) external view returns (bool);
 }
 
-import "hardhat/console.sol";
 contract RiddleQuestFactory {
     IVerifier public immutable verifier;
 
@@ -28,18 +27,15 @@ contract RiddleQuestFactory {
 
     function submitGuess(
             bytes calldata _proof, 
-            bytes32[] calldata _publicInputs,
             uint256 _questId
             ) external {
-        require(!solved[_questId], "Quest already solved");
-        require(_publicInputs.length == 1, "Invalid public input length");
-      
-        try verifier.verify(_proof, _publicInputs) {
-        } catch Error(string memory reason) {
-            revert(reason);
-        }
 
-       if (_publicInputs[0] == solutionHash[_questId]) {
+        require(!solved[_questId], "Quest already solved");
+
+        bytes32[] memory publicInputs = new bytes32[](1);
+        publicInputs[0] = solutionHash[_questId];
+
+        try verifier.verify(_proof, publicInputs) {
             solved[_questId] = true;
             emit QuestSolved(_questId);
             if (_questId == lowerOpenQuestId) {
@@ -47,7 +43,10 @@ contract RiddleQuestFactory {
                     lowerOpenQuestId++;
                 }
             }
+        } catch {
+            revert("Proof verification failed");
         }
+
     }
     function createRiddle(
             string memory _riddle,

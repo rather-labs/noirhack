@@ -1,7 +1,7 @@
 'use client';
 import { Noir } from '@noir-lang/noir_js';
 import type { CompiledCircuit, InputMap, ProofData } from '@noir-lang/types';
-import { UltraHonkBackend, splitHonkProof, reconstructHonkProof } from '@aztec/bb.js';
+import { UltraHonkBackend, splitHonkProof } from '@aztec/bb.js';
 import toast from "react-hot-toast";
 import { toHex } from 'viem';
 

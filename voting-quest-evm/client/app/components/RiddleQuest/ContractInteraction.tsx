@@ -12,6 +12,7 @@ import verifier from '@/public/contracts/RiddleVerifier.json' assert { type: 'js
 import RiddleCircuitJSON from '@/public/circuit/riddle.json' assert { type: 'json' };
 
 import { generateProof } from '@/app/utils/noir'
+import { padHex } from 'viem'
 
 
 const riddleQuestFactoryABI = riddleQuestFactory.abi
@@ -112,12 +113,7 @@ export default function RiddleContractInteraction() {
         address: contractAddress as `0x${string}`,
         functionName: 'submitGuess',
         args: [
-          //toHex(proof.proof), 
-          proofBytes  as string,
-          //`0x${Buffer.from(proof.proof).toString('hex')}`,
-          //proof.publicInputs as `0x${string}`[],
-          //proof.publicInputs.map((input) => padHex(input as `0x${string}`, { size: 32 })),
-          proof.publicInputs.map((input) => input as string),
+          proofBytes as string,
           questIdToSolve, 
         ],
      })
@@ -186,6 +182,7 @@ export default function RiddleContractInteraction() {
       <div>
         <p><strong>Bounty:</strong> {questBounty.toString()}</p>
         <p><strong>Riddle:</strong> {riddle.toString()}</p>
+        <p><strong>Solution Hash:</strong> {solutionHash.toString()}</p>
         {isSolved ? <p><strong>Quest Solved</strong></p> : <p><strong>Quest still open</strong></p>}
       </div>
     )
@@ -319,7 +316,14 @@ export default function RiddleContractInteraction() {
                 type="text"
                 id="answerToRiddle"
                 value={answerToRiddle}
-                onChange={(e) => setAnswerToRiddle(e.target.value)}
+                onChange={(e) => {
+                  // Limit input to 6 characters
+                  if (e.target.value.length <= 6) {
+                    setAnswerToRiddle(e.target.value);
+                  }
+                }}
+                maxLength={6}
+                placeholder="Up to 6 letter word"
                 className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:w-1/3 sm:text-sm border-gray-300 rounded-md"
                 min="1"
               />
