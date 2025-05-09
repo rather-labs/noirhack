@@ -17,6 +17,7 @@ import RiddleDetail from './pages/RiddleDetail';
 import { wagmiConfig } from './config/wagmi-config';
 
 import './index.css';
+import { Toaster } from 'react-hot-toast';
 
 const routes: RouteObject[] = [
   {
@@ -37,6 +38,12 @@ createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <WagmiProvider config={wagmiConfig}>
+        <Toaster
+          position="top-center"
+          toastOptions={{
+            style: { background: '#1e293b', color: '#fff' },
+          }}
+        />
         <RouterProvider router={router} />
       </WagmiProvider>
     </QueryClientProvider>

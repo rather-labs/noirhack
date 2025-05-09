@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { type Quest } from '../components/ui/QuestGrid';
 import { useSubmitRiddleProof } from '../hooks/useSubmitRiddleProof';
 import RiddleQuestFactoryAbi from '../config/abi/RiddleQuestFactory.json';
-import { useReadContract } from 'wagmi';
+import { useWatchContractEvent } from 'wagmi';
 
 const MOCK_RIDDLES: Record<string, Quest & { prompt: string }> = {
   '1': {
@@ -23,33 +23,67 @@ const RIDDLE_QUESTS_ADDRESES: Record<string, `0x${string}`> = {
 };
 
 export default function RiddleDetail() {
-  const { id } = useParams();
-  const quest = MOCK_RIDDLES[id ?? ''];
-  const [answer, setAnswer] = useState('');
-  const [activity, setActivity] = useState<string[]>([]);
+  const { id = '' } = useParams();
+  const quest = MOCK_RIDDLES[id];
+  const factory = RIDDLE_QUESTS_ADDRESES[id];
 
-  // Read metadata for a specific quest ID
-  const { data: questMetadata, refetch: refetchQuestMetadata } =
-    useReadContract({
-      address: `0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512`,
-      abi: RiddleQuestFactoryAbi,
-      functionName: 'getQuestMetadata',
-      args: [1],
-    });
+  const [answer, setAnswer] = useState('');
+  const [activity, setActivity] = useState<string[]>(() => {
+    const key = `attempts_${id}`;
+    const stored = localStorage.getItem(key);
+    return stored ? JSON.parse(stored) : [];
+  });
+
+  const { submit: submitRiddle, status: submitStatus } = useSubmitRiddleProof();
 
   useEffect(() => {
-    console.log(questMetadata);
+    localStorage.setItem(`attempts_${id}`, JSON.stringify(activity));
+  }, [activity, id]);
 
-    refetchQuestMetadata();
-  }, [questMetadata, refetchQuestMetadata]);
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!answer.trim()) return;
 
-  const {
-    submit: submitRiddle,
-    handleCreateQuest,
-    // reset: resetRiddle,
-    // status: riddleStatus,
-    // error: riddleError,
-  } = useSubmitRiddleProof();
+    try {
+      await submitRiddle({
+        guess: answer,
+        questId: quest.id,
+        contractAddress: factory,
+      });
+
+      setActivity((prev) => [`🔄 You submitted “${answer.trim()}”`, ...prev]);
+      setAnswer('');
+    } catch {
+      /** */
+    }
+  }
+
+  useWatchContractEvent({
+    address: factory,
+    abi: RiddleQuestFactoryAbi,
+    eventName: 'QuestSolved',
+    onLogs: ([questId]) => {
+      if (Number(questId) !== quest.id) return;
+      setActivity((prev) => [
+        '🎉 Proof verified! Quest marked as solved.',
+        ...prev,
+      ]);
+    },
+  });
+
+  useWatchContractEvent({
+    address: factory,
+    abi: RiddleQuestFactoryAbi,
+    eventName: 'BountyClaimed',
+    onLogs: ([questId, winner]) => {
+      if (Number(questId) !== quest.id) return;
+      setActivity((prev) => [
+        /** @ts-expect-error - i know */
+        `🏆 Bounty claimed by ${winner.slice(0, 6)}…`,
+        ...prev,
+      ]);
+    },
+  });
 
   if (!quest) {
     return (
@@ -57,35 +91,15 @@ export default function RiddleDetail() {
     );
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    try {
-      const hash = await submitRiddle({
-        guess: answer,
-        questId: quest.id,
-        contractAddress: RIDDLE_QUESTS_ADDRESES[quest.id],
-      });
-
-      console.log(hash);
-
-      setActivity((prev) => [`🔄 You submitted “${answer.trim()}”`, ...prev]);
-      setAnswer('');
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
   return (
     <div className="mx-auto max-w-2xl p-6 pb-16">
-      {/* Back link */}
       <Link
         to="/quests"
         className="mb-6 inline-flex items-center gap-1 text-sm text-white/70 hover:underline">
         ← Back to quests
       </Link>
 
-      {/* Header row */}
+      {/* Header */}
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2 text-xs font-semibold">
           <span className="inline-flex items-center gap-1 rounded-full bg-accent-riddle/20 px-2 py-0.5 text-accent-riddle">
@@ -115,19 +129,51 @@ export default function RiddleDetail() {
           type="text"
           placeholder="Your answer..."
           className="flex-1 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm placeholder-white/40 focus:border-accent-riddle focus:outline-none"
+          disabled={
+            submitStatus === 'generating_proof' ||
+            submitStatus === 'submitting_proof'
+          }
         />
+
         <button
           type="submit"
-          className="rounded-full bg-accent-riddle px-6 py-2 text-sm font-medium hover:bg-accent-riddle/80 disabled:opacity-40"
-          disabled={!answer.trim()}>
-          Submit answer →
+          disabled={
+            !answer.trim() ||
+            submitStatus === 'generating_proof' ||
+            submitStatus === 'submitting_proof'
+          }
+          className="inline-flex items-center justify-center gap-2 rounded-full bg-accent-riddle px-6 py-2 text-sm font-medium hover:bg-accent-riddle/80 disabled:opacity-40">
+          {/* Spinner during work */}
+          {(submitStatus === 'generating_proof' ||
+            submitStatus === 'submitting_proof') && (
+            <svg
+              className="h-4 w-4 animate-spin"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24">
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z"
+              />
+            </svg>
+          )}
+
+          {submitStatus === 'generating_proof'
+            ? 'Generating proof…'
+            : submitStatus === 'submitting_proof'
+            ? 'Submitting…'
+            : 'Submit answer →'}
         </button>
       </form>
-      <button
-        onClick={handleCreateQuest}
-        className="rounded-full bg-accent-riddle px-6 py-2 text-sm font-medium hover:bg-accent-riddle/80 disabled:opacity-40">
-        Submit create →
-      </button>
 
       {/* Activity feed */}
       <section className="mt-12">

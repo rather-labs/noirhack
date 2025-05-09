@@ -1,36 +1,36 @@
 import { Noir } from '@noir-lang/noir_js';
-import type { InputMap, ProofData } from '@noir-lang/types';
+import type { InputMap } from '@noir-lang/types';
 import { UltraHonkBackend } from '@aztec/bb.js';
 import RiddleCircuitJSON from '../noir/circuits/riddle.json';
+import { toHex } from 'viem';
 
-export async function generateProof(
-  inputs: InputMap,
-  keccak = true
-): Promise<ProofData> {
-  try {
-    console.log('inputs', inputs);
+export async function generateProof(inputs: InputMap, keccak = true) {
+  // @ts-expect-error - this error is happening because the private parameter is kind array and expects an string
+  // "type": { "kind": "array", "length": 6, "type": { "kind": "field" } }
+  const noir = new Noir(RiddleCircuitJSON);
+  const backend = new UltraHonkBackend(RiddleCircuitJSON.bytecode, {
+    threads: 4,
+  });
 
-    const noir = new Noir(RiddleCircuitJSON);
+  const { witness } = await noir.execute(inputs);
 
-    const { witness } = await noir.execute(inputs);
-    console.log('witness', witness);
+  const proofData = await backend.generateProof(witness, { keccak });
 
-    const backend = new UltraHonkBackend(RiddleCircuitJSON.bytecode, {
-      threads: 4,
-    });
-
-    const proof = await backend.generateProof(witness, { keccak });
-    console.log('proof', proof);
-
-    const verified = await backend.verifyProof(proof, { keccak });
-    console.log('verified', verified);
-
-    return {
-      proof: proof.proof,
-      publicInputs: proof.publicInputs,
-    };
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    throw new Error(`Failed to generate proof: ${errorMessage}`);
+  if (!backend.verifyProof(proofData)) {
+    throw new Error('invalid proof');
   }
+
+  const proofHex = toHex(proofData.proof);
+  const publicInputsHex = proofData.publicInputs.map((pi) =>
+    typeof pi === 'string'
+      ? pi.startsWith('0x')
+        ? pi
+        : (`0x${pi}` as `0x${string}`)
+      : toHex(pi)
+  );
+
+  return {
+    proof: proofHex,
+    publicInputs: publicInputsHex,
+  };
 }
