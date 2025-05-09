@@ -1,15 +1,22 @@
 import React from 'react';
-import { createRoot } from 'react-dom/client';
+
 import {
-  createBrowserRouter,
   RouterProvider,
   type RouteObject,
+  createBrowserRouter,
 } from 'react-router-dom';
+import { createRoot } from 'react-dom/client';
+
+import { WagmiProvider } from 'wagmi';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
 import App from './App';
-import './index.css';
 import Home from './pages/Home';
 import QuestsPage from './pages/Quests';
 import RiddleDetail from './pages/RiddleDetail';
+import { wagmiConfig } from './config/wagmi-config';
+
+import './index.css';
 
 const routes: RouteObject[] = [
   {
@@ -24,9 +31,14 @@ const routes: RouteObject[] = [
 ];
 
 const router = createBrowserRouter(routes);
+const queryClient = new QueryClient();
 
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <RouterProvider router={router} />
+    <QueryClientProvider client={queryClient}>
+      <WagmiProvider config={wagmiConfig}>
+        <RouterProvider router={router} />
+      </WagmiProvider>
+    </QueryClientProvider>
   </React.StrictMode>
 );
