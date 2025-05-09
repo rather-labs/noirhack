@@ -5,11 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useMetaMask } from "../hooks/useMetaMask";
+import { QuestType, useQuestType } from "../context/QuestTypeContext";
 
 export default function Navbar() {
   const { data: session } = useSession();
   const router = useRouter();
   const { address, isConnected, connectMetaMask, disconnect } = useMetaMask();
+  const { questType, setQuestType } = useQuestType();
 
   const handleSignOut = async () => {
     await signOut({ 
@@ -19,14 +21,30 @@ export default function Navbar() {
     router.refresh();
   };
 
+  const handleQuestTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setQuestType(Number.parseInt(e.target.value, 10));
+  };
+
   return (
     <nav className="bg-white shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
-          <div className="flex items-center">
+          <div className="flex items-center space-x-4">
             <Link href="/" className="text-xl font-bold text-gray-800">
-              JWT Voting
+              On chain Quests
             </Link>
+            
+            {/* Quest Type Selector */}
+            <div className="ml-4">
+              <select
+                value={questType}
+                onChange={handleQuestTypeChange}
+                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+              >
+                <option value={QuestType.VOTING}>JWT Voting</option>
+                <option value={QuestType.RIDDLE}>Riddle Solving</option>
+              </select>
+            </div>
           </div>
           
           {/* Wallet Connect/Disconnect - Center */}

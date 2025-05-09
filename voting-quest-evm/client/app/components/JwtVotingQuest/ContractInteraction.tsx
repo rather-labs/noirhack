@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useReadContract, useWriteContract } from 'wagmi'
 import toast from 'react-hot-toast'
 import type { ProofData } from '@noir-lang/types'
-import { Hex, hexToBytes, hexToString, padHex, stringToHex, toHex } from 'viem';
+//import { Hex, hexToBytes, hexToString, padHex, stringToHex, toHex } from 'viem';
 
 // ABI for the VotingQuestFactory contract
 import votingQuestFactory from '@/public/contracts/VotingQuestFactory.json' assert { type: 'json' };
@@ -17,7 +17,7 @@ interface ContractInteractionProps {
   proof: ProofData | null;
 }
 
-export default function ContractInteraction({ proof }: ContractInteractionProps) {
+export default function VotingContractInteraction({ proof }: ContractInteractionProps) {
   const [questObjective, setQuestObjective] = useState<string>('1')
   const [questIdToSolve, setQuestIdToSolve] = useState<string>('0')
   const [bounty, setBounty] = useState<string>('0')
@@ -35,8 +35,6 @@ export default function ContractInteraction({ proof }: ContractInteractionProps)
   // Read metadata for a the quest factory
   const { data: metadata, 
           isLoading: isLoadingMetadata, 
-          isSuccess: isSuccessMetadata, 
-          error: metadataError,
           refetch: refetchMetadata 
         } = useReadContract({
     address: contractAddress as `0x${string}`,
@@ -48,8 +46,6 @@ export default function ContractInteraction({ proof }: ContractInteractionProps)
   // Read metadata for a specific quest ID
   const { data: questMetadata, 
           isLoading: isLoadingQuestMetadata, 
-          isSuccess: isSuccessQuestMetadata, 
-          error: questMetadataError,
           refetch: refetchQuestMetadata 
         } = useReadContract({
     address: contractAddress as `0x${string}`,
@@ -127,9 +123,8 @@ export default function ContractInteraction({ proof }: ContractInteractionProps)
       const publicInputsHex = proof.publicInputs.map(input => {
           if (typeof input === 'string' && input.startsWith('0x')) {
               return input;
-          } else {
-              return `0x${Buffer.from(input).toString('hex')}`;
-          }
+          }              
+          return `0x${Buffer.from(input).toString('hex')}`;
       });
       const result = await writeContractAsync({ 
         abi: verifier.abi,

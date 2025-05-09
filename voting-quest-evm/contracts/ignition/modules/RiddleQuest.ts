@@ -10,7 +10,7 @@ const RiddleQuestFactory = buildModule("RiddleQuestFactory", (m) => {
     [riddleVerifier],
   );
 
-  return { riddleQuestFactory };
+  return { riddleVerifier, riddleQuestFactory };
 });
 
 export default RiddleQuestFactory;

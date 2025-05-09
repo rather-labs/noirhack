@@ -2,7 +2,6 @@
 import { Noir } from '@noir-lang/noir_js';
 import type { CompiledCircuit, InputMap, ProofData } from '@noir-lang/types';
 import { UltraHonkBackend, splitHonkProof, reconstructHonkProof } from '@aztec/bb.js';
-import circuitJSON from '@/public/circuit/jwtnoir/target/jwtnoir.json' assert { type: 'json' };
 import toast from "react-hot-toast";
 import { toHex } from 'viem';
 
@@ -11,13 +10,10 @@ export type Circuit = {
   nargoToml: string;
 }
 
-export async function generateProof(inputs: InputMap): Promise<ProofData> {
+export async function generateProof(circuit: CompiledCircuit, inputs: InputMap, keccak = true ): Promise<ProofData> {
   try {
-    toast.loading("Getting circuit... ⏳", {duration: 1_000_000, id: "toast-message"});
-	  const circuit = circuitJSON as CompiledCircuit;
-    toast.remove("toast-message");
-
   	console.log("circuit", circuit)
+    console.log("inputs", inputs)
 
     toast.loading("Generating noir circuit... ⏳", {duration: 1_000_000, id: "toast-message"});
     const noir = new Noir(circuit);
@@ -26,18 +22,19 @@ export async function generateProof(inputs: InputMap): Promise<ProofData> {
     toast.loading("Generating witness... ⏳", {duration: 1_000_000, id: "toast-message"});
     const { witness } = await noir.execute(inputs);
     toast.remove("toast-message");
+    console.log("witness", witness)
   
     toast.loading("Initializing backend... ⏳", {duration: 1_000_000, id: "toast-message"});
     const backend = new UltraHonkBackend(circuit.bytecode, { threads: 4 });
     toast.remove("toast-message");
     
     toast.loading("Generating proof... ⏳", {duration: 1_000_000, id: "toast-message"});
-    const proof = await backend.generateProof(witness, { keccak: true });
+    const proof = await backend.generateProof(witness, { keccak });
     console.log("proof", proof)
     toast.remove("toast-message");
 
     toast.loading("Verifying proof... ⏳", {duration: 1_000_000, id: "toast-message"});
-    const verified = await backend.verifyProof(proof, { keccak: true });
+    const verified = await backend.verifyProof(proof, { keccak });
     console.log("verified", verified)
     toast.remove("toast-message");
     if (verified) {
@@ -66,7 +63,7 @@ export async function generateProof(inputs: InputMap): Promise<ProofData> {
 
 export async function getProofFromFile(NPublicInputs: number): Promise<ProofData> {
   try {
-    const response = await fetch('@/public/circuit/jwtnoir/target/proof')
+    const response = await fetch('@/public/circuit/proof')
     const arrayBuffer = await response.arrayBuffer();
     const proofFromFile = new Uint8Array(arrayBuffer);
 
