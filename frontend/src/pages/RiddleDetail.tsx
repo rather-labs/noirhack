@@ -108,7 +108,7 @@ export default function RiddleDetail() {
   const statusLabel = solved ? 'solved' : 'open';
 
   return (
-    <div className="mx-auto max-w-2xl p-6 pb-16">
+    <div className="mx-auto max-w-2xl px-6 py-16">
       {/* Back link */}
       <Link
         to="/quests"
