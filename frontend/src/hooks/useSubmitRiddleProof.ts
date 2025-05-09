@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import { generateProof } from '../noir/generateRiddleProof';
-import { useWriteContract } from 'wagmi';
+import { usePublicClient, useWriteContract } from 'wagmi';
 
 import RiddleQuestFactoryAbi from '../config/abi/RiddleQuestFactory.json';
 import { stringToAsciiArray } from '../utils';
@@ -16,10 +16,12 @@ export type SubmitStatus =
   | 'idle'
   | 'generating_proof'
   | 'submitting_proof'
+  | 'confirming_tx'
   | 'success'
   | 'error';
 
 export function useSubmitRiddleProof() {
+  const publicClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
 
   const [status, setStatus] = useState<SubmitStatus>('idle');
@@ -43,7 +45,7 @@ export function useSubmitRiddleProof() {
         toast.loading('Submitting proof to chain…', { id: toastId });
         setStatus('submitting_proof');
 
-        await writeContractAsync({
+        const hash = await writeContractAsync({
           abi: RiddleQuestFactoryAbi,
           address: contractAddress,
           functionName: 'submitGuess',
@@ -51,6 +53,14 @@ export function useSubmitRiddleProof() {
         });
 
         toast.success('Proof submitted! Waiting for confirmation…', {
+          id: toastId,
+        });
+        toast.loading('Waiting for confirmations…', { id: toastId });
+        setStatus('confirming_tx');
+
+        await publicClient!.waitForTransactionReceipt({ hash });
+
+        toast.success('Transaction confirmed! 🎉', {
           id: toastId,
         });
         setStatus('success');
@@ -63,7 +73,7 @@ export function useSubmitRiddleProof() {
         throw err;
       }
     },
-    [writeContractAsync]
+    [publicClient, writeContractAsync]
   );
 
   return { submit, reset, status, error };

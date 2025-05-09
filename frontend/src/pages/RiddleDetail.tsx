@@ -61,6 +61,26 @@ export default function RiddleDetail() {
   useWatchContractEvent({
     address: factory,
     abi: RiddleQuestFactoryAbi,
+    eventName: 'SubmitFailure',
+    args: [BigInt(quest.id)],
+    onLogs(logs) {
+      logs.forEach((log) => {
+        /** @ts-expect-error - i know */
+        const [questId, solver] = log.args as [bigint, `0x${string}`];
+
+        if (Number(questId) !== quest.id) return;
+
+        setActivity((prev) => [
+          `❌ ${solver.slice(0, 6)}… made an attempt`,
+          ...prev,
+        ]);
+      });
+    },
+  });
+
+  useWatchContractEvent({
+    address: factory,
+    abi: RiddleQuestFactoryAbi,
     eventName: 'QuestSolved',
     onLogs: ([questId]) => {
       if (Number(questId) !== quest.id) return;
@@ -131,7 +151,8 @@ export default function RiddleDetail() {
           className="flex-1 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm placeholder-white/40 focus:border-accent-riddle focus:outline-none"
           disabled={
             submitStatus === 'generating_proof' ||
-            submitStatus === 'submitting_proof'
+            submitStatus === 'submitting_proof' ||
+            submitStatus === 'confirming_tx'
           }
         />
 
@@ -171,6 +192,8 @@ export default function RiddleDetail() {
             ? 'Generating proof…'
             : submitStatus === 'submitting_proof'
             ? 'Submitting…'
+            : submitStatus === 'confirming_tx'
+            ? 'Confirming…'
             : 'Submit answer →'}
         </button>
       </form>
