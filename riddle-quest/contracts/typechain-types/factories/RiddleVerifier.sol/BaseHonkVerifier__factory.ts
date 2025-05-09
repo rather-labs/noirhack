@@ -6,7 +6,7 @@ import { Contract, Interface, type ContractRunner } from "ethers";
 import type {
   BaseHonkVerifier,
   BaseHonkVerifierInterface,
-} from "../../HonkVerifier.sol/BaseHonkVerifier";
+} from "../../RiddleVerifier.sol/BaseHonkVerifier";
 
 const _abi = [
   {

@@ -4,21 +4,21 @@
 
 import { Contract, Interface, type ContractRunner } from "ethers";
 import type {
-  IHonkVerifier,
-  IHonkVerifierInterface,
-} from "../../Quest.sol/IHonkVerifier";
+  IVerifier,
+  IVerifierInterface,
+} from "../../RiddleVerifier.sol/IVerifier";
 
 const _abi = [
   {
     inputs: [
       {
         internalType: "bytes",
-        name: "proof",
+        name: "_proof",
         type: "bytes",
       },
       {
         internalType: "bytes32[]",
-        name: "publicInputs",
+        name: "_publicInputs",
         type: "bytes32[]",
       },
     ],
@@ -35,15 +35,12 @@ const _abi = [
   },
 ] as const;
 
-export class IHonkVerifier__factory {
+export class IVerifier__factory {
   static readonly abi = _abi;
-  static createInterface(): IHonkVerifierInterface {
-    return new Interface(_abi) as IHonkVerifierInterface;
+  static createInterface(): IVerifierInterface {
+    return new Interface(_abi) as IVerifierInterface;
   }
-  static connect(
-    address: string,
-    runner?: ContractRunner | null
-  ): IHonkVerifier {
-    return new Contract(address, _abi, runner) as unknown as IHonkVerifier;
+  static connect(address: string, runner?: ContractRunner | null): IVerifier {
+    return new Contract(address, _abi, runner) as unknown as IVerifier;
   }
 }

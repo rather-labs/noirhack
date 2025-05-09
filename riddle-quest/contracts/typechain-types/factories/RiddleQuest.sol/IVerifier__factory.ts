@@ -6,7 +6,7 @@ import { Contract, Interface, type ContractRunner } from "ethers";
 import type {
   IVerifier,
   IVerifierInterface,
-} from "../../HonkVerifier.sol/IVerifier";
+} from "../../RiddleQuest.sol/IVerifier";
 
 const _abi = [
   {

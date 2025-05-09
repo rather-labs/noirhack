@@ -19,7 +19,7 @@ import type {
   TypedContractMethod,
 } from "../common";
 
-export interface IHonkVerifierInterface extends Interface {
+export interface IVerifierInterface extends Interface {
   getFunction(nameOrSignature: "verify"): FunctionFragment;
 
   encodeFunctionData(
@@ -30,11 +30,11 @@ export interface IHonkVerifierInterface extends Interface {
   decodeFunctionResult(functionFragment: "verify", data: BytesLike): Result;
 }
 
-export interface IHonkVerifier extends BaseContract {
-  connect(runner?: ContractRunner | null): IHonkVerifier;
+export interface IVerifier extends BaseContract {
+  connect(runner?: ContractRunner | null): IVerifier;
   waitForDeployment(): Promise<this>;
 
-  interface: IHonkVerifierInterface;
+  interface: IVerifierInterface;
 
   queryFilter<TCEvent extends TypedContractEvent>(
     event: TCEvent,
@@ -74,7 +74,7 @@ export interface IHonkVerifier extends BaseContract {
   ): Promise<this>;
 
   verify: TypedContractMethod<
-    [proof: BytesLike, publicInputs: BytesLike[]],
+    [_proof: BytesLike, _publicInputs: BytesLike[]],
     [boolean],
     "view"
   >;
@@ -86,7 +86,7 @@ export interface IHonkVerifier extends BaseContract {
   getFunction(
     nameOrSignature: "verify"
   ): TypedContractMethod<
-    [proof: BytesLike, publicInputs: BytesLike[]],
+    [_proof: BytesLike, _publicInputs: BytesLike[]],
     [boolean],
     "view"
   >;
