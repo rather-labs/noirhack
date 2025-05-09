@@ -2,37 +2,23 @@
   {
     "inputs": [
       {
-        "internalType": "address",
+        "internalType": "contract IVerifier",
         "name": "_verifier",
         "type": "address"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "_solutionHash",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "string",
-        "name": "_title",
-        "type": "string"
-      },
-      {
-        "internalType": "string",
-        "name": "_prompt",
-        "type": "string"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_deadline",
-        "type": "uint256"
       }
     ],
-    "stateMutability": "payable",
+    "stateMutability": "nonpayable",
     "type": "constructor"
   },
   {
     "anonymous": false,
     "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "questId",
+        "type": "uint256"
+      },
       {
         "indexed": true,
         "internalType": "address",
@@ -53,6 +39,12 @@
     "anonymous": false,
     "inputs": [
       {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "questId",
+        "type": "uint256"
+      },
+      {
         "indexed": false,
         "internalType": "string",
         "name": "title",
@@ -71,12 +63,18 @@
         "type": "uint256"
       }
     ],
-    "name": "QuestInitialized",
+    "name": "QuestCreated",
     "type": "event"
   },
   {
     "anonymous": false,
     "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "questId",
+        "type": "uint256"
+      },
       {
         "indexed": true,
         "internalType": "address",
@@ -94,35 +92,7 @@
     "type": "event"
   },
   {
-    "inputs": [],
-    "name": "bounty",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "deadline",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getFullMetadata",
-    "outputs": [
+    "inputs": [
       {
         "internalType": "string",
         "name": "_title",
@@ -134,23 +104,65 @@
         "type": "string"
       },
       {
-        "internalType": "uint256",
-        "name": "_bounty",
-        "type": "uint256"
+        "internalType": "bytes32",
+        "name": "_solutionHash",
+        "type": "bytes32"
       },
       {
         "internalType": "uint256",
         "name": "_deadline",
         "type": "uint256"
+      }
+    ],
+    "name": "createRiddle",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "questId",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "questId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getQuest",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "title",
+        "type": "string"
       },
       {
-        "internalType": "enum RiddleQuest.Status",
+        "internalType": "string",
+        "name": "prompt",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "bounty",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "deadline",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint8",
         "name": "_status",
         "type": "uint8"
       },
       {
         "internalType": "address",
-        "name": "_winner",
+        "name": "winner",
         "type": "address"
       }
     ],
@@ -159,49 +171,29 @@
   },
   {
     "inputs": [],
-    "name": "prompt",
+    "name": "nextQuestId",
     "outputs": [
       {
-        "internalType": "string",
+        "internalType": "uint256",
         "name": "",
-        "type": "string"
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "solutionHash",
-    "outputs": [
+    "inputs": [
       {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
+        "internalType": "uint256",
+        "name": "questId",
+        "type": "uint256"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "solved",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "status",
     "outputs": [
       {
-        "internalType": "enum RiddleQuest.Status",
+        "internalType": "uint8",
         "name": "",
         "type": "uint8"
       }
@@ -212,14 +204,14 @@
   {
     "inputs": [
       {
-        "internalType": "bytes",
-        "name": "_proof",
-        "type": "bytes"
+        "internalType": "uint256",
+        "name": "questId",
+        "type": "uint256"
       },
       {
-        "internalType": "bytes32[]",
-        "name": "_publicInputs",
-        "type": "bytes32[]"
+        "internalType": "bytes",
+        "name": "proof",
+        "type": "bytes"
       }
     ],
     "name": "submitProof",
@@ -229,36 +221,10 @@
   },
   {
     "inputs": [],
-    "name": "title",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "verifier",
     "outputs": [
       {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "winner",
-    "outputs": [
-      {
-        "internalType": "address",
+        "internalType": "contract IVerifier",
         "name": "",
         "type": "address"
       }
