@@ -1,0 +1,34 @@
+{
+  "noir_version": "1.0.0-beta.3+ceaa1986628197bd1170147f6a07f0f98d21030a",
+  "hash": 7199356767374590986,
+  "abi": {
+    "parameters": [
+      {
+        "name": "guess",
+        "type": { "kind": "array", "length": 6, "type": { "kind": "field" } },
+        "visibility": "private"
+      },
+      {
+        "name": "expected_hash",
+        "type": { "kind": "field" },
+        "visibility": "public"
+      }
+    ],
+    "return_type": null,
+    "error_types": {}
+  },
+  "bytecode": "H4sIAAAAAAAA/9VUWw7CIBCk75dt1ZMsBVr48yo20vufwIgpRET9MF0/nGTCBMJmmSUTkRVHw4K8IrLrya4MRs71NGjK6BkGNUsBXMyjpJIKKS6DZExLLic1qwkU5UzTRSi2wIrCqwXfYQw3Itt3GvR6tTrydOzpwmp3rzSsDGvDxtt3SAIPYBtoglirRJzNDq8v+KV/KWKtCtG/9k/8yxBr1Yj+dYj+vcuG+/92GdB6uvN0Q56zoTfcGx6Ceg5xMJutHuSIs+mR/XRvz733u2xN7HlGHjmck8+4Af8pnep4BgAA",
+  "debug_symbols": "3ZRBCoMwEEXvMmsXyUxjqlcppUSNJRCiRC0U6d2bilqhUheFLtzlZ14+8zbpodBZd70YV1YNpKcebJWr1lQupB7YcNXUyr1S0yrfQsoZRaBdEU6UPCIojdWQxvwRfaAk4hE9IJtRFCsoYoIji8TEd5gTx3kH4hsw48kEs/i4hM8R8P0r4h8V5bwISqKNraWcirlMxC+KtH/Fw/4Vxf4V41VFge/6peI5hMwba831svyYw/VNeaMyq8dYdi5fTNt7PU2m97Wvcl10Xr+ahlmofwI=",
+  "file_map": {
+    "25": {
+      "source": "use crate::default::Default;\nuse crate::hash::Hasher;\n\ncomptime global RATE: u32 = 3;\n\npub struct Poseidon2 {\n    cache: [Field; 3],\n    state: [Field; 4],\n    cache_size: u32,\n    squeeze_mode: bool, // 0 => absorb, 1 => squeeze\n}\n\nimpl Poseidon2 {\n    #[no_predicates]\n    pub fn hash<let N: u32>(input: [Field; N], message_size: u32) -> Field {\n        Poseidon2::hash_internal(input, message_size, message_size != N)\n    }\n\n    pub fn new(iv: Field) -> Poseidon2 {\n        let mut result =\n            Poseidon2 { cache: [0; 3], state: [0; 4], cache_size: 0, squeeze_mode: false };\n        result.state[RATE] = iv;\n        result\n    }\n\n    fn perform_duplex(&mut self) {\n        // add the cache into sponge state\n        for i in 0..RATE {\n            // We effectively zero-pad the cache by only adding to the state\n            // cache that is less than the specified `cache_size`\n            if i < self.cache_size {\n                self.state[i] += self.cache[i];\n            }\n        }\n        self.state = crate::hash::poseidon2_permutation(self.state, 4);\n    }\n\n    fn absorb(&mut self, input: Field) {\n        assert(!self.squeeze_mode);\n        if self.cache_size == RATE {\n            // If we're absorbing, and the cache is full, apply the sponge permutation to compress the cache\n            self.perform_duplex();\n            self.cache[0] = input;\n            self.cache_size = 1;\n        } else {\n            // If we're absorbing, and the cache is not full, add the input into the cache\n            self.cache[self.cache_size] = input;\n            self.cache_size += 1;\n        }\n    }\n\n    fn squeeze(&mut self) -> Field {\n        assert(!self.squeeze_mode);\n        // If we're in absorb mode, apply sponge permutation to compress the cache.\n        self.perform_duplex();\n        self.squeeze_mode = true;\n\n        // Pop one item off the top of the permutation and return it.\n        self.state[0]\n    }\n\n    fn hash_internal<let N: u32>(\n        input: [Field; N],\n        in_len: u32,\n        is_variable_length: bool,\n    ) -> Field {\n        let two_pow_64 = 18446744073709551616;\n        let iv: Field = (in_len as Field) * two_pow_64;\n        let mut sponge = Poseidon2::new(iv);\n        for i in 0..input.len() {\n            if i < in_len {\n                sponge.absorb(input[i]);\n            }\n        }\n\n        // In the case where the hash preimage is variable-length, we append `1` to the end of the input, to distinguish\n        // from fixed-length hashes. (the combination of this additional field element + the hash IV ensures\n        // fixed-length and variable-length hashes do not collide)\n        if is_variable_length {\n            sponge.absorb(1);\n        }\n        sponge.squeeze()\n    }\n}\n\npub struct Poseidon2Hasher {\n    _state: [Field],\n}\n\nimpl Hasher for Poseidon2Hasher {\n    fn finish(self) -> Field {\n        let iv: Field = (self._state.len() as Field) * 18446744073709551616; // iv = (self._state.len() << 64)\n        let mut sponge = Poseidon2::new(iv);\n        for i in 0..self._state.len() {\n            sponge.absorb(self._state[i]);\n        }\n        sponge.squeeze()\n    }\n\n    fn write(&mut self, input: Field) {\n        self._state = self._state.push_back(input);\n    }\n}\n\nimpl Default for Poseidon2Hasher {\n    fn default() -> Self {\n        Poseidon2Hasher { _state: &[] }\n    }\n}\n",
+      "path": "std/hash/poseidon2.nr"
+    },
+    "61": {
+      "source": "use std::hash::poseidon2;\n\nfn main(guess: [Field; 6], expected_hash: pub Field) {\n    let guess_hash = poseidon2::Poseidon2::hash(guess, 6);\n    assert(guess_hash == expected_hash);\n}\n\n#[test]\nfn test_main() {\n    let guess = [84, 73, 69, 77, 80, 79];\n    let expected_hash = 0x26a9cd878299aae15aa2e27d41fab958fbe7f0730d81e834c5315bdbf3eecb04;\n\n    println(poseidon2::Poseidon2::hash(guess, guess.len()));\n\n    main(guess, expected_hash);\n}\n\n#[test(should_fail)]\nfn test_fail() {\n    let guess = [84, 73, 69, 77, 80, 79];\n    let expected_hash = 0x168758332d5b3e2d13be8048c8011b454590e06c44bce7f702f09103eef5a373;\n\n    main(guess, expected_hash);\n}\n",
+      "path": "/Users/nvcho/Desktop/acme-noirhack/riddle-quest/circuit/riddle/src/main.nr"
+    }
+  },
+  "names": ["main"],
+  "brillig_names": []
+}
