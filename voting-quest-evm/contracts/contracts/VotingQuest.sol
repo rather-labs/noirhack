@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.21;
-import {JwtVerifier} from "./JwtVerifier.sol";
+
+interface IVerifier {
+    function verify(bytes calldata _proof, bytes32[] calldata _publicInputs) external view returns (bool);
+}
 
 import "hardhat/console.sol";
 contract VotingQuestFactory {
-    address public immutable verifier;
+    IVerifier public immutable verifier;
+
     mapping(uint256 => mapping(uint256 => uint256)) public voteCandidates;
     mapping(uint256 => mapping(bytes32 => uint256)) public voteSecrets;
     mapping(uint256 => bytes32) public winnerSecret;
@@ -19,7 +23,7 @@ contract VotingQuestFactory {
     event QuestSolved(uint256 questId, bytes32 winnerSecret);
     event ProofSubmitted(uint256 questId, uint256 voteCandidate, bytes32 voteSecret);
     event BountyClaimed(uint256 questId, address winner);
-    constructor(address _verifier) payable {
+    constructor(IVerifier _verifier) payable {
         questId = 0;
         lowerOpenQuestId = 0;
         verifier = _verifier;
@@ -37,7 +41,7 @@ contract VotingQuestFactory {
 
         console.log("Verifying proof");
         
-        try JwtVerifier(verifier).verify(_proof, _publicInputs) {
+        try verifier.verify(_proof, _publicInputs) {
             console.log("Proof verified");
         } catch Error(string memory reason) {
             console.log("Proof verification failed");
@@ -93,7 +97,7 @@ contract VotingQuestFactory {
         uint256 _questId,
         uint256 _lowerOpenQuestId
     ) {
-        return (verifier, questId, lowerOpenQuestId);
+        return (address(verifier), questId, lowerOpenQuestId);
     }
 
     function getQuestMetadata(uint256 _questId) external view returns (

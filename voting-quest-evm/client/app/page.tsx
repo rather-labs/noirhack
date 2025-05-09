@@ -5,7 +5,7 @@ import Navbar from "./components/Navbar";
 import { useJWTInfo, getOpenIDClaims } from "./utils/auth";
 import { useSession } from "next-auth/react";
 import { generateInputs } from "noir-jwt";
-import { generateProof } from "./utils/noir";
+import { generateProof, getProofFromFile } from "./utils/noir";
 import type { InputMap, ProofData } from "@noir-lang/types";
 import { Toaster } from 'react-hot-toast';
 import ContractInteraction from "./components/ContractInteraction";
@@ -87,6 +87,7 @@ export default function Home() {
       setError(null);
       console.log("inputs", inputs);
       const generatedProof = await generateProof(inputs as InputMap);
+      //const generatedProof = await getProofFromFile(18);
       setProof(generatedProof);
     } catch (err: unknown) {
       console.error("Error generating proof:", err);

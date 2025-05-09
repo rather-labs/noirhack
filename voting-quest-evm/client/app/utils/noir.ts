@@ -4,7 +4,7 @@ import type { CompiledCircuit, InputMap, ProofData } from '@noir-lang/types';
 import { UltraHonkBackend, splitHonkProof, reconstructHonkProof } from '@aztec/bb.js';
 import circuitJSON from '@/public/circuit/jwtnoir/target/jwtnoir.json' assert { type: 'json' };
 import toast from "react-hot-toast";
-
+import { toHex } from 'viem';
 
 export type Circuit = {
   main: string;
@@ -54,6 +54,35 @@ export async function generateProof(inputs: InputMap): Promise<ProofData> {
     return {
       proof: proof.proof,
       publicInputs: proof.publicInputs
+    }
+  } catch (error: unknown) {
+    toast.remove("toast-message");
+    toast.error("Failed to generate proof! 🚫", {duration: 10_000, id: "proof-generation-failed"});
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to generate proof: ${errorMessage}`);
+  }
+}  
+
+
+export async function getProofFromFile(NPublicInputs: number): Promise<ProofData> {
+  try {
+    const response = await fetch('@/public/circuit/jwtnoir/target/proof')
+    const arrayBuffer = await response.arrayBuffer();
+    const proofFromFile = new Uint8Array(arrayBuffer);
+
+    const splitProof = splitHonkProof(proofFromFile, NPublicInputs);
+    // Chunk public inputs into bytes32 array
+    const publicInputsAsBytes32: `0x${string}`[] = [];
+    for (let i = 0; i < NPublicInputs; i++) {
+      const input = splitProof.publicInputs.slice(i * 32, (i + 1) * 32);
+      // Convert BigInt to hex string, pad to 64 characters (32 bytes) and add 0x prefix
+      const hexValue = toHex(input);
+      publicInputsAsBytes32.push(hexValue as `0x${string}`);
+    }
+    console.log("splitProof", splitProof.proof, publicInputsAsBytes32)
+    return {
+      proof: toHex(splitProof.proof),
+      publicInputs: publicInputsAsBytes32
     }
   } catch (error: unknown) {
     toast.remove("toast-message");

@@ -1,7 +1,10 @@
 {
   "scripts": {
     "start": "npx hardhat node",
-    "deploy": "npx hardhat run scripts/sendETHToMetaMask.ts --network localhost && npx hardhat ignition deploy ./ignition/modules/VotingQuest.ts --network localhost --reset"
+    "transfer": "npx hardhat run scripts/sendETHToMetaMask.ts --network localhost",
+    "deploy:voting": "npx hardhat ignition deploy ./ignition/modules/VotingQuest.ts --network localhost --reset",
+    "deploy:riddle": "npx hardhat ignition deploy ./ignition/modules/RiddleQuest.ts --network localhost --reset",
+    "deploy": "npm run transfer && npm run deploy:voting && npm run deploy:riddle"
   },
   "devDependencies": {
     "@types/node": "^22.15.2",

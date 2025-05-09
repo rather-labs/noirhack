@@ -86,23 +86,22 @@ export default function ContractInteraction({ proof }: ContractInteractionProps)
     try {
       const hashedSecretToSubmit = keccak256(secretToSubmit as `0x${string}`)
       const candidateToVoteForBigInt = BigInt(candidateToVoteFor || '0')
-      console.log("hashedSecretToSubmit", hashedSecretToSubmit)
-      console.log("toHex(proof.proof)", toHex(proof.proof))
+
       const proofBytes = `0x${Array.from(Object.values(proof.proof))
         .map(n => n.toString(16).padStart(2, '0'))
         .join('')}`;
-      console.log("proofBytes", proofBytes)
+
       await writeContractAsync({ 
         abi: votingQuestFactoryABI,
         address: contractAddress as `0x${string}`,
         functionName: 'submitVote',
         args: [
           //toHex(proof.proof), 
-          proofBytes  as `0x${string}`,
+          proofBytes  as string,
           //`0x${Buffer.from(proof.proof).toString('hex')}`,
           //proof.publicInputs as `0x${string}`[],
           //proof.publicInputs.map((input) => padHex(input as `0x${string}`, { size: 32 })),
-          proof.publicInputs.map((input) => input as `0x${string}`),
+          proof.publicInputs.map((input) => input as string),
           questIdToSolve, 
           candidateToVoteForBigInt, 
           hashedSecretToSubmit 
@@ -121,24 +120,31 @@ export default function ContractInteraction({ proof }: ContractInteractionProps)
     }
 
     try {
-      console.log("toHex(proof.proof)", toHex(proof.proof))
-      const proofBytes = `0x${Array.from(Object.values(proof.proof))
-        .map(n => n.toString(16).padStart(2, '0'))
+      const proofBytes = `0x${Array.from(proof.proof)
+        .map(byte => byte.toString(16).padStart(2, '0'))
         .join('')}`;
-      console.log("proofBytes", proofBytes)
-      await writeContractAsync({ 
+
+      const publicInputsHex = proof.publicInputs.map(input => {
+          if (typeof input === 'string' && input.startsWith('0x')) {
+              return input;
+          } else {
+              return `0x${Buffer.from(input).toString('hex')}`;
+          }
+      });
+      const result = await writeContractAsync({ 
         abi: verifier.abi,
         address: process.env.NEXT_PUBLIC_JWT_VERIFIER_ADDRESS as `0x${string}`,
         functionName: 'verify',
         args: [
-          //toHex(proof.proof), 
-          proofBytes  as `0x${string}`,
+          proofBytes as `0x${string}`, 
+          //proofBytes  as `0x${string}`,
           //`0x${Buffer.from(proof.proof).toString('hex')}`,
-          //proof.publicInputs as `0x${string}`[],
+          publicInputsHex as `0x${string}`[],
           //proof.publicInputs.map((input) => padHex(input as `0x${string}`, { size: 32 })),
-          proof.publicInputs.map((input) => input as `0x${string}`)
-        ],
+          //proof.publicInputs.map((input) => input as `0x${string}`)
+        ]
      })
+      console.log("result", result)
     } catch (error) {
       toast.error('Failed to submit vote. Please check your inputs and ensure you have a valid proof.')
       console.error(error)
@@ -292,7 +298,7 @@ export default function ContractInteraction({ proof }: ContractInteractionProps)
             </button>
             {!proof && (
               <p className="text-sm text-red-600 mt-2">
-                Please generate a proof first before submitting a vote.
+                Please generate a proof first before submitting a vote or tryting to verify on chain.
               </p>
             )}
           </div>
@@ -347,6 +353,7 @@ export default function ContractInteraction({ proof }: ContractInteractionProps)
             <button
               type="button"
               onClick={handleVerifyProof}
+              disabled={!proof || isPending}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
             >
               {isPending ? 'Waiting transaction...' : 'Verify'}
