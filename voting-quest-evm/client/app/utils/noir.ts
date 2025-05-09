@@ -5,16 +5,8 @@ import { UltraHonkBackend, splitHonkProof } from '@aztec/bb.js';
 import toast from "react-hot-toast";
 import { toHex } from 'viem';
 
-export type Circuit = {
-  main: string;
-  nargoToml: string;
-}
-
 export async function generateProof(circuit: CompiledCircuit, inputs: InputMap, keccak = true ): Promise<ProofData> {
   try {
-  	console.log("circuit", circuit)
-    console.log("inputs", inputs)
-
     toast.loading("Generating noir circuit... ⏳", {duration: 1_000_000, id: "toast-message"});
     const noir = new Noir(circuit);
     toast.remove("toast-message");
@@ -43,11 +35,6 @@ export async function generateProof(circuit: CompiledCircuit, inputs: InputMap, 
       toast.error("Proof verification failed! 🚫", {duration: 15_000, id: "toast-message"});
     }
 
-    //const splitProof = splitHonkProof(proof.proof, 18);
-    //console.log("splitProof", splitProof)
-    //const reconstructedProof = reconstructHonkProof(splitProof.publicInputs, splitProof.proof);
-    //console.log("reconstructedProof", reconstructedProof)
-    
     return {
       proof: proof.proof,
       publicInputs: proof.publicInputs
@@ -60,7 +47,7 @@ export async function generateProof(circuit: CompiledCircuit, inputs: InputMap, 
   }
 }  
 
-
+// FUNCTIONS FOR CLI GENERATED PROOF
 export async function getProofFromFile(NPublicInputs: number): Promise<ProofData> {
   try {
     const response = await fetch('@/public/circuit/proof')
@@ -88,3 +75,4 @@ export async function getProofFromFile(NPublicInputs: number): Promise<ProofData
     throw new Error(`Failed to generate proof: ${errorMessage}`);
   }
 }  
+

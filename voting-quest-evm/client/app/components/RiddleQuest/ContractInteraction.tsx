@@ -131,9 +131,9 @@ export default function RiddleContractInteraction() {
         RiddleCircuitJSON as CompiledCircuit, 
         { guess: guessAsciiArray } as InputMap
       )
-      const proofBytes = `0x${Array.from(proof.proof)
-        .map(byte => byte.toString(16).padStart(2, '0'))
-        .join('')}`;
+      //const proofBytes = `0x${Array.from(proof.proof)
+      //  .map(byte => byte.toString(16).padStart(2, '0'))
+      //  .join('')}`;
 
       const publicInputsHex = proof.publicInputs.map(input => {
           if (typeof input === 'string' && input.startsWith('0x')) {
@@ -146,7 +146,45 @@ export default function RiddleContractInteraction() {
         address: process.env.NEXT_PUBLIC_RIDDLE_VERIFIER_ADDRESS as `0x${string}`,
         functionName: 'verify',
         args: [
-          proofBytes as `0x${string}`, 
+          proof.proof as `0x${string}`, 
+          //proofBytes  as `0x${string}`,
+          //`0x${Buffer.from(proof.proof).toString('hex')}`,
+          publicInputsHex as `0x${string}`[],
+          //proof.publicInputs.map((input) => padHex(input as `0x${string}`, { size: 32 })),
+          //proof.publicInputs.map((input) => input as `0x${string}`)
+        ]
+     })
+      console.log("result", result)
+    } catch (error) {
+      toast.error('Failed to submit vote. Please check your inputs and ensure you have a valid proof.')
+      console.error(error)
+    }
+  }
+
+  const handleVerifyRecursiveProof = async () => {
+    try {
+      const guessAsciiArray = stringToAsciiArray(guess, 6)
+      console.log("guessAsciiArray", guessAsciiArray)
+      const proof = await generateProof(
+        RiddleCircuitJSON as CompiledCircuit, 
+        { guess: guessAsciiArray } as InputMap
+      )
+      //const proofBytes = `0x${Array.from(proof.proof)
+      //  .map(byte => byte.toString(16).padStart(2, '0'))
+      //  .join('')}`;
+
+      const publicInputsHex = proof.publicInputs.map(input => {
+          if (typeof input === 'string' && input.startsWith('0x')) {
+              return input;
+          }
+          return `0x${Buffer.from(input).toString('hex')}`;
+      });
+      const result = await writeContractAsync({ 
+        abi: verifier.abi,
+        address: process.env.NEXT_PUBLIC_RIDDLE_VERIFIER_ADDRESS as `0x${string}`,
+        functionName: 'verify',
+        args: [
+          proof.proof as `0x${string}`, 
           //proofBytes  as `0x${string}`,
           //`0x${Buffer.from(proof.proof).toString('hex')}`,
           publicInputsHex as `0x${string}`[],

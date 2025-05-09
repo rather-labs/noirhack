@@ -6,11 +6,13 @@ const VotingQuestFactory = buildModule("VotingQuestFactory", (m) => {
 
   const jwtVerifier = m.contract("JwtVerifier");
 
+  const proofVerifier = m.contract("ProofVerifier");
+
   const votingQuestFactory = m.contract("VotingQuestFactory", 
     [jwtVerifier],
   );
 
-  return { jwtVerifier, votingQuestFactory };
+  return { jwtVerifier, proofVerifier, votingQuestFactory };
 });
 
 export default VotingQuestFactory;

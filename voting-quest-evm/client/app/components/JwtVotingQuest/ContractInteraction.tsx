@@ -4,20 +4,23 @@ import { useState } from 'react'
 import { useReadContract, useWriteContract } from 'wagmi'
 import toast from 'react-hot-toast'
 import type { ProofData } from '@noir-lang/types'
+import type { ProofDataForRecursion } from "../../utils/recursiveNoir";
 //import { Hex, hexToBytes, hexToString, padHex, stringToHex, toHex } from 'viem';
 
 // ABI for the VotingQuestFactory contract
 import votingQuestFactory from '@/public/contracts/VotingQuestFactory.json' assert { type: 'json' };
 import verifier from '@/public/contracts/JwtVerifier.json' assert { type: 'json' };
+import recursiveVerifier from '@/public/contracts/ProofVerifier.json' assert { type: 'json' };
 import { keccak256 } from 'viem'
 
 const votingQuestFactoryABI = votingQuestFactory.abi
 
 interface ContractInteractionProps {
   proof: ProofData | null;
+  recursiveProof: ProofDataForRecursion | null;
 }
 
-export default function VotingContractInteraction({ proof }: ContractInteractionProps) {
+export default function VotingContractInteraction({ proof, recursiveProof }: ContractInteractionProps) {
   const [questObjective, setQuestObjective] = useState<string>('1')
   const [questIdToSolve, setQuestIdToSolve] = useState<string>('0')
   const [bounty, setBounty] = useState<string>('0')
@@ -93,11 +96,11 @@ export default function VotingContractInteraction({ proof }: ContractInteraction
         functionName: 'submitVote',
         args: [
           //toHex(proof.proof), 
-          proofBytes  as string,
+          proofBytes as `0x${string}`,
           //`0x${Buffer.from(proof.proof).toString('hex')}`,
           //proof.publicInputs as `0x${string}`[],
           //proof.publicInputs.map((input) => padHex(input as `0x${string}`, { size: 32 })),
-          proof.publicInputs.map((input) => input as string),
+          proof.publicInputs.map((input) => input as `0x${string}`),
           questIdToSolve, 
           candidateToVoteForBigInt, 
           hashedSecretToSubmit 
@@ -116,9 +119,9 @@ export default function VotingContractInteraction({ proof }: ContractInteraction
     }
 
     try {
-      const proofBytes = `0x${Array.from(proof.proof)
-        .map(byte => byte.toString(16).padStart(2, '0'))
-        .join('')}`;
+      const proofBytes = `0x${Array.from(Object.values(proof.proof))
+      .map(n => n.toString(16).padStart(2, '0'))
+      .join('')}`;
 
       const publicInputsHex = proof.publicInputs.map(input => {
           if (typeof input === 'string' && input.startsWith('0x')) {
@@ -126,20 +129,61 @@ export default function VotingContractInteraction({ proof }: ContractInteraction
           }              
           return `0x${Buffer.from(input).toString('hex')}`;
       });
-      const result = await writeContractAsync({ 
+
+      console.log("publicInputsHex", publicInputsHex)
+      console.log("proofBytes", proofBytes)
+      await writeContractAsync({ 
         abi: verifier.abi,
         address: process.env.NEXT_PUBLIC_JWT_VERIFIER_ADDRESS as `0x${string}`,
         functionName: 'verify',
         args: [
-          proofBytes as `0x${string}`, 
-          //proofBytes  as `0x${string}`,
+          //proof.proof as `0x${string}`, 
+          proofBytes  as `0x${string}`,
           //`0x${Buffer.from(proof.proof).toString('hex')}`,
           publicInputsHex as `0x${string}`[],
           //proof.publicInputs.map((input) => padHex(input as `0x${string}`, { size: 32 })),
           //proof.publicInputs.map((input) => input as `0x${string}`)
         ]
      })
-      console.log("result", result)
+    } catch (error) {
+      toast.error('Failed to submit vote. Please check your inputs and ensure you have a valid proof.')
+      console.error(error)
+    }
+  }
+
+  const handleVerifyRecursiveProof = async () => {
+    if (!recursiveProof) {
+      toast.error('No proof available. Please generate a proof first.')
+      return
+    }
+
+    try {
+      const proofBytes = `0x${Array.from(Object.values(recursiveProof.proof))
+      .map(n => n.toString(16).padStart(2, '0'))
+      .join('')}`;
+
+      const publicInputsHex = recursiveProof.publicInputs.map(input => {
+          if (typeof input === 'string' && input.startsWith('0x')) {
+              return input;
+          }              
+          return `0x${Buffer.from(input).toString('hex')}`;
+      });
+
+      console.log("publicInputsHex", publicInputsHex)
+      console.log("proofBytes", proofBytes)
+      await writeContractAsync({ 
+        abi: recursiveVerifier.abi,
+        address: process.env.NEXT_PUBLIC_RECURSIVE_PROOF_VERIFIER_ADDRESS as `0x${string}`,
+        functionName: 'verify',
+        args: [
+          //proof.proof as `0x${string}`, 
+          proofBytes  as `0x${string}`,
+          //`0x${Buffer.from(proof.proof).toString('hex')}`,
+          publicInputsHex as `0x${string}`[],
+          //proof.publicInputs.map((input) => padHex(input as `0x${string}`, { size: 32 })),
+          //proof.publicInputs.map((input) => input as `0x${string}`)
+        ]
+     })
     } catch (error) {
       toast.error('Failed to submit vote. Please check your inputs and ensure you have a valid proof.')
       console.error(error)
@@ -185,7 +229,6 @@ export default function VotingContractInteraction({ proof }: ContractInteraction
     if (!metadata) return 'No metadata available'
     
     // Extract values from the tuple
-    console.log("metadata", metadata)
     const [verifier, questId, lowerOpenQuestId] = metadata as [string, number, number]
     
     return (
@@ -200,7 +243,7 @@ export default function VotingContractInteraction({ proof }: ContractInteraction
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
       <h2 className="text-xl font-semibold mb-4">Voting Quest Contract Interaction</h2>
-      <div className="flex flex-wrap gap-6">
+      <div className="flex flex-wrap gap-6 mb-8">
         <div className="flex-1 min-w-[300px]">
           <h3 className="text-lg font-medium mb-2">Create New Quest</h3>
           <div className="space-y-3">
@@ -293,14 +336,51 @@ export default function VotingContractInteraction({ proof }: ContractInteraction
             </button>
             {!proof && (
               <p className="text-sm text-red-600 mt-2">
-                Please generate a proof first before submitting a vote or tryting to verify on chain.
+                Please generate a proof first before submitting a vote or trying to verify on chain.
               </p>
             )}
           </div>
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-6">
+      
+      <div className="flex flex-wrap gap-6 mb-8">
+        <div className="flex-1 min-w-[300px]">
+          <h3 className="text-lg font-medium mb-2">Verify proof on chain</h3>
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={handleVerifyProof}
+              disabled={!proof || isPending}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+            >
+              {isPending ? 'Waiting transaction...' : 'Verify'}
+            </button>
+          </div>
+        </div>
+
+
+        <div className="flex-1 min-w-[300px]">
+          <h3 className="text-lg font-medium mb-2">Verify proof recursively on chain</h3>
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={handleVerifyRecursiveProof}
+              disabled={!recursiveProof || isPending}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+            >
+              {isPending ? 'Waiting transaction...' : 'Verify'}
+            </button>
+          </div>
+          {!recursiveProof && (
+            <p className="text-sm text-red-600 mt-2">
+              Please generate a recursive proof first before trying to verify on chain.
+            </p>
+          )}
+        </div>
+      </div>
+      
+      <div className="flex flex-wrap gap-6 mb-8">
         <div className="flex-1 min-w-[300px]">
           <h3 className="text-lg font-medium mb-2">Claim bounty</h3>
           <div className="space-y-3">
@@ -337,21 +417,6 @@ export default function VotingContractInteraction({ proof }: ContractInteraction
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
             >
               {isPending ? 'Waiting transaction...' : 'Claim Bounty'}
-            </button>
-          </div>
-        </div>
-
-
-        <div className="flex-1 min-w-[300px]">
-          <h3 className="text-lg font-medium mb-2">Verify proof on chain</h3>
-          <div className="space-y-3">
-            <button
-              type="button"
-              onClick={handleVerifyProof}
-              disabled={!proof || isPending}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-            >
-              {isPending ? 'Waiting transaction...' : 'Verify'}
             </button>
           </div>
         </div>

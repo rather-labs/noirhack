@@ -5,7 +5,9 @@ import { useJWTInfo, getOpenIDClaims } from "../../utils/auth";
 import { useSession } from "next-auth/react";
 import { generateInputs } from "noir-jwt";
 import { generateProof } from "../../utils/noir";
+import { generateRecursiveProof } from "../../utils/recursiveNoir";
 import type { CompiledCircuit, InputMap, ProofData } from "@noir-lang/types";
+import type { ProofDataForRecursion } from "../../utils/recursiveNoir";
 import { Toaster } from 'react-hot-toast';
 
 import JwtCircuitJSON from '@/public/circuit/jwtnoir.json' assert { type: 'json' };
@@ -28,6 +30,8 @@ export default function VotingProofGeneration() {
   const [error, setError] = useState<string | null>(null);
   const jwtInfo = useJWTInfo();
   const openIdClaims = jwtInfo?.idToken ? getOpenIDClaims(jwtInfo.idToken) : null;
+  const [recursiveProof, setRecursiveProof] = useState<ProofDataForRecursion | null>(null);
+  const [isGeneratingRecursiveProof, setIsGeneratingRecursiveProof] = useState(false);
 
   async function getInputs() {
     if (status === "authenticated" && session) {
@@ -98,6 +102,29 @@ export default function VotingProofGeneration() {
     }
   }
 
+  async function generateRecursiveNoirProof() {
+    if (!inputs) {
+      setError("No inputs available. Please generate inputs first.");
+      return;
+    }
+
+    try {
+      setIsGeneratingRecursiveProof(true);
+      setError(null);
+      console.log("inputs", inputs);
+      const generatedRecursiveProof = await generateRecursiveProof(JwtCircuitJSON as CompiledCircuit, inputs as InputMap);
+      //const generatedProof = await getProofFromFile(18);
+      setRecursiveProof(generatedRecursiveProof);
+    } catch (err: unknown) {
+      console.error("Error generating proof:", err);
+      const errorMessage = err instanceof Error ? err.message : "Failed to generate proof";
+      setError(errorMessage);
+    } finally {
+      setIsGeneratingRecursiveProof(false);
+    }
+  }
+
+
   const handleShowToken = () => {
     setShowTokenInfo(!showTokenInfo);
   };
@@ -157,6 +184,16 @@ export default function VotingProofGeneration() {
                       {isGeneratingProof ? "Generating..." : "Generate Proof"}
                     </button>
                   )}
+                  {inputs && (
+                    <button
+                      type="button"
+                      onClick={generateRecursiveNoirProof}
+                      disabled={isGeneratingRecursiveProof}
+                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
+                    >
+                      {isGeneratingRecursiveProof ? "Generating..." : "Generate Recursive Proof"}
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -203,7 +240,7 @@ export default function VotingProofGeneration() {
             <h2 className="text-2xl font-bold text-gray-900 mb-4">
               Contract Interaction
             </h2>
-            <VotingContractInteraction proof={proof} />
+            <VotingContractInteraction proof={proof} recursiveProof={recursiveProof} />
           </div>
         </div>
       </main>

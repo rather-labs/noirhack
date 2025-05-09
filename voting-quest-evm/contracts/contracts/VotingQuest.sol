@@ -37,7 +37,6 @@ contract VotingQuestFactory {
             bytes32 _voteSecret
             ) external {
         require(!solved[_questId], "Quest already solved");
-        require(_publicInputs.length == 18, "Invalid public input length");
 
         console.log("Verifying proof");
         
