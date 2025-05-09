@@ -1,7 +1,7 @@
 {
   "scripts": {
     "start": "npx hardhat node",
-    "transfer": "npx hardhat run scripts/sendETHToMetaMask.ts --network localhost",
+    "transfer": "npx hardhat run scripts/sendETHtoMetaMask.ts --network localhost",
     "deploy:riddle": "npx hardhat ignition deploy ./ignition/modules/RiddleQuest.ts --network localhost --reset",
     "deploy": "npm run transfer && npm run deploy:riddle"
   },
