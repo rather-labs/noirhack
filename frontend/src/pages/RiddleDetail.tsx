@@ -83,7 +83,7 @@ export default function RiddleDetail() {
 
   useWatchContractEvent({
     address: factory,
-    abi: RiddleQuestFactoryAbi,
+    abi: RiddleQuestFactoryAbi.abi,
     eventName: 'SubmitFailure',
     args: [undefined, undefined, BigInt(questId)],
     enabled: !meta?.solved,
@@ -101,7 +101,7 @@ export default function RiddleDetail() {
 
   useWatchContractEvent({
     address: factory,
-    abi: RiddleQuestFactoryAbi,
+    abi: RiddleQuestFactoryAbi.abi,
     eventName: 'QuestSolved',
     args: [BigInt(questId)],
     enabled: !meta?.solved,

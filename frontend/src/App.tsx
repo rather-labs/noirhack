@@ -9,7 +9,7 @@ export default function App() {
     <div className="min-h-screen bg-color-black text-color-white font-sans">
       <header className="flex items-center justify-between p-4">
         <h1 className="text-xl font-bold tracking-widest">
-          on-chain<span className="font-light">quests</span>
+          on-chain<span className="font-light"> quests</span>
         </h1>
         <ConnectButton />
       </header>
