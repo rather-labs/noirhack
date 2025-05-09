@@ -1,0 +1,6 @@
+[package]
+name = "riddle_2"
+type = "bin"
+authors = [""]
+
+[dependencies]
