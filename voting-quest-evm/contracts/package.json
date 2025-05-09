@@ -1,0 +1,18 @@
+{
+  "scripts": {
+    "start": "npx hardhat node",
+    "transfer": "npx hardhat run scripts/sendETHToMetaMask.ts --network localhost",
+    "deploy:voting": "npx hardhat ignition deploy ./ignition/modules/VotingQuest.ts --network localhost --reset",
+    "deploy:riddle": "npx hardhat ignition deploy ./ignition/modules/RiddleQuest.ts --network localhost --reset",
+    "deploy": "npm run transfer && npm run deploy:voting && npm run deploy:riddle"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.2",
+    "hardhat": "^2.23.0"
+  },
+  "dependencies": {
+    "@nomicfoundation/hardhat-toolbox-viem": "^3.0.0",
+    "hardhat-contract-sizer": "^2.10.0",
+    "viem": "^2.28.4"
+  }
+}

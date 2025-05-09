@@ -1,12 +1,16 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+
   transpilePackages: [
     "@aztec/bb.js",
     "@aztec/stdlib",
+    "@aztec/foundation",
+    "@aztec/accounts",
+    "@aztec/aztec.js",
     "@noir-lang/noir_js",
     "@noir-lang/noir_wasm",
-    "@noir-lang/types"
+    "@noir-lang/types",
   ],
   images: {
     remotePatterns: [
@@ -30,7 +34,7 @@ const nextConfig: NextConfig = {
       test: /\.wasm$/,
       type: "asset/resource",
     });
-    
+      
     // Support for top-level await
     config.experiments = {
       asyncWebAssembly: true,

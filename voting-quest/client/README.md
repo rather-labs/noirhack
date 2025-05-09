@@ -1,62 +1,98 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# How to RUN
 
-## Getting Started
+## Start sandbox with default accounts
+```bash
+aztec-up
+```
 
-First, run the development server:
+Start sanbox
+```bash
+aztec start --sandbox
+```
 
+Initiate default accounts
+
+```bash
+aztec-wallet import-test-accounts
+```
+
+## Deploy the contract to verify the jwt proof on chain
+
+```bash
+cd public/circuit/contractVerifyproof
+```
+
+Compile contract
+```bash
+aztec-nargo compile
+```
+
+Generate artifact
+```bash
+aztec codegen target --outdir src/artifacts
+```
+
+Must use node 18
+```bash
+npm run deploy
+```
+
+## Set environment values on env.local file
+
+```bash
+# Google OAuth values
+GOOGLE_CLIENT_SECRET=
+GOOGLE_CLIENT_ID=
+
+# Secret to generate JWT token
+NEXTAUTH_SECRET=
+
+# Contract on chain to verify JWT proof (Obtained from previous deployment)
+NEXT_PUBLIC_CONTRACT_ADDRESS=
+```
+
+## Run client
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+# Errors
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Cast vote on chain
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+After login in, you can generate a proof and cast the vote on-chain calling the function from the deployed contract.
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-## Casting Votes On-Chain
-
-To enable the on-chain voting functionality, you need to set up the following environment variables in a `.env.local` file:
-
-```bash
-# Aztec Network Configuration
-NEXT_PUBLIC_PXE_URL=http://localhost:8080
-# You need to replace this with a valid private key from your Aztec wallet
-NEXT_PUBLIC_AZTEC_PRIVATE_KEY=your_private_key_here
-# Replace with your deployed contract address
-NEXT_PUBLIC_CONTRACT_ADDRESS=your_contract_address_here
+The following is thrown by the browser
+```
+page.tsx:167 Error casting vote: Error: Type 'object' with value '0x0000000000000000000000000000000000000000000000000000000000000000' passed to BaseField ctor.
+    at new BaseField (fields.js:126:19)
+    at new Fr (fields.js:267:9)
+    at new GasFees (gas_fees.js:81:28)
+    at GasFees.from (gas_fees.js:46:16)
+    at GasSettings.from (gas_settings.js:32:216)
+    at GasSettings.default (gas_settings.js:45:28)
+    at ContractFunctionInteraction.getDefaultFeeOptions (base_contract_interaction.js:94:95)
+    at ContractFunctionInteraction.getFeeOptions (base_contract_interaction.js:114:46)
+    at ContractFunctionInteraction.create (contract_function_interaction.js:29:32)
+    at async ContractFunctionInteraction.proveInternal (base_contract_interaction.js:29:27)
+    at async eval (base_contract_interaction.js:57:37)
+    at async SentTx.waitForReceipt (sent_tx.js:51:24)
+    at async SentTx.wait (sent_tx.js:43:25)
+    at async castVoteOnChain (noir.ts:264:16)
+    at async castVote (page.tsx:164:7)
 ```
 
-Make sure you:
-1. Have the Aztec sandbox running locally at the specified PXE URL
-2. Replace the placeholder private key with your actual Aztec wallet private key
-3. Deploy the contract and update the contract address in the environment variables
+Different versions were tried
 
-## Notes
-* Google uses Opaque tokens for the OAuth Access tokens, not JWT
-* The id_token is passed upon initial sign in
-* 106, 117, 97, 110, 98, 101, 108, 105, 101, 114, 97, 64, 103, 109, 97, 105, 108, 46, 99, 111, 109 is juanbliera@gmail.com
+### Tested Versions
 
-# TODO
-* 
+Below is a table of different versions that were tested, reproducing the same error with all
+
+| Noir                         | Aztec  | noir-jwt|
+|------------------------------|--------|---------|
+| 1.0.0-beta.3                 | 0.82.2 | 0.4.4   |
+| 1.0.0-beta.3                 | 0.84.0 | 0.4.4   |
+| 1.0.0-beta.4-d8e4de4.nightly | 0.85.0 | 0.5.0   |
+
+### Tests carried out
+* using gas settings to override default on function castVoteOnChain() in /app/utils/noir.ts

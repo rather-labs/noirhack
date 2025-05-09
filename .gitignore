@@ -31,4 +31,6 @@ dist-ssr
 *.sw?
 
 .next/
-
+typechain-types/
+deployments/
+trash/
