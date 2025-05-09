@@ -2,4 +2,4 @@
 /* tslint:disable */
 /* eslint-disable */
 export { IVerifier__factory } from "./IVerifier__factory";
-export { RiddleQuest__factory } from "./RiddleQuest__factory";
+export { RiddleQuestHub__factory } from "./RiddleQuestHub__factory";

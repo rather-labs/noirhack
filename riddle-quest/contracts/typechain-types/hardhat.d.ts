@@ -18,9 +18,9 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IVerifier__factory>;
     getContractFactory(
-      name: "RiddleQuest",
+      name: "RiddleQuestHub",
       signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.RiddleQuest__factory>;
+    ): Promise<Contracts.RiddleQuestHub__factory>;
     getContractFactory(
       name: "BaseHonkVerifier",
       signerOrOptions?: ethers.Signer | FactoryOptions
@@ -40,10 +40,10 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.IVerifier>;
     getContractAt(
-      name: "RiddleQuest",
+      name: "RiddleQuestHub",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
-    ): Promise<Contracts.RiddleQuest>;
+    ): Promise<Contracts.RiddleQuestHub>;
     getContractAt(
       name: "BaseHonkVerifier",
       address: string | ethers.Addressable,
@@ -65,9 +65,9 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IVerifier>;
     deployContract(
-      name: "RiddleQuest",
+      name: "RiddleQuestHub",
       signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.RiddleQuest>;
+    ): Promise<Contracts.RiddleQuestHub>;
     deployContract(
       name: "BaseHonkVerifier",
       signerOrOptions?: ethers.Signer | DeployContractOptions
@@ -87,10 +87,10 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IVerifier>;
     deployContract(
-      name: "RiddleQuest",
+      name: "RiddleQuestHub",
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.RiddleQuest>;
+    ): Promise<Contracts.RiddleQuestHub>;
     deployContract(
       name: "BaseHonkVerifier",
       args: any[],

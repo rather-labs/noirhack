@@ -2,4 +2,4 @@
 /* tslint:disable */
 /* eslint-disable */
 export type { IVerifier } from "./IVerifier";
-export type { RiddleQuest } from "./RiddleQuest";
+export type { RiddleQuestHub } from "./RiddleQuestHub";

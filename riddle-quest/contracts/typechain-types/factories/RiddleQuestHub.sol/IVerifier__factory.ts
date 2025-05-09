@@ -6,19 +6,19 @@ import { Contract, Interface, type ContractRunner } from "ethers";
 import type {
   IVerifier,
   IVerifierInterface,
-} from "../../RiddleQuest.sol/IVerifier";
+} from "../../RiddleQuestHub.sol/IVerifier";
 
 const _abi = [
   {
     inputs: [
       {
         internalType: "bytes",
-        name: "_proof",
+        name: "proof",
         type: "bytes",
       },
       {
         internalType: "bytes32[]",
-        name: "_publicInputs",
+        name: "pubInputs",
         type: "bytes32[]",
       },
     ],

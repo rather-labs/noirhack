@@ -74,7 +74,7 @@ export interface IVerifier extends BaseContract {
   ): Promise<this>;
 
   verify: TypedContractMethod<
-    [_proof: BytesLike, _publicInputs: BytesLike[]],
+    [proof: BytesLike, pubInputs: BytesLike[]],
     [boolean],
     "view"
   >;
@@ -86,7 +86,7 @@ export interface IVerifier extends BaseContract {
   getFunction(
     nameOrSignature: "verify"
   ): TypedContractMethod<
-    [_proof: BytesLike, _publicInputs: BytesLike[]],
+    [proof: BytesLike, pubInputs: BytesLike[]],
     [boolean],
     "view"
   >;

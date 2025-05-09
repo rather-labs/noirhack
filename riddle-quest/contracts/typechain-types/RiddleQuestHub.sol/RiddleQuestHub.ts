@@ -23,73 +23,69 @@ import type {
   TypedContractMethod,
 } from "../common";
 
-export interface RiddleQuestInterface extends Interface {
+export interface RiddleQuestHubInterface extends Interface {
   getFunction(
     nameOrSignature:
-      | "bounty"
-      | "deadline"
-      | "getFullMetadata"
-      | "prompt"
-      | "solutionHash"
-      | "solved"
+      | "createRiddle"
+      | "getQuest"
+      | "nextQuestId"
       | "status"
       | "submitProof"
-      | "title"
       | "verifier"
-      | "winner"
   ): FunctionFragment;
 
   getEvent(
-    nameOrSignatureOrTopic: "ProofAttempt" | "QuestInitialized" | "QuestSolved"
+    nameOrSignatureOrTopic: "ProofAttempt" | "QuestCreated" | "QuestSolved"
   ): EventFragment;
 
-  encodeFunctionData(functionFragment: "bounty", values?: undefined): string;
-  encodeFunctionData(functionFragment: "deadline", values?: undefined): string;
   encodeFunctionData(
-    functionFragment: "getFullMetadata",
+    functionFragment: "createRiddle",
+    values: [string, string, BytesLike, BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getQuest",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "nextQuestId",
     values?: undefined
   ): string;
-  encodeFunctionData(functionFragment: "prompt", values?: undefined): string;
   encodeFunctionData(
-    functionFragment: "solutionHash",
-    values?: undefined
+    functionFragment: "status",
+    values: [BigNumberish]
   ): string;
-  encodeFunctionData(functionFragment: "solved", values?: undefined): string;
-  encodeFunctionData(functionFragment: "status", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "submitProof",
-    values: [BytesLike, BytesLike[]]
+    values: [BigNumberish, BytesLike]
   ): string;
-  encodeFunctionData(functionFragment: "title", values?: undefined): string;
   encodeFunctionData(functionFragment: "verifier", values?: undefined): string;
-  encodeFunctionData(functionFragment: "winner", values?: undefined): string;
 
-  decodeFunctionResult(functionFragment: "bounty", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "deadline", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "getFullMetadata",
+    functionFragment: "createRiddle",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "prompt", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "getQuest", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "solutionHash",
+    functionFragment: "nextQuestId",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "solved", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "status", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "submitProof",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "title", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "verifier", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "winner", data: BytesLike): Result;
 }
 
 export namespace ProofAttemptEvent {
-  export type InputTuple = [solver: AddressLike, ok: boolean];
-  export type OutputTuple = [solver: string, ok: boolean];
+  export type InputTuple = [
+    questId: BigNumberish,
+    solver: AddressLike,
+    ok: boolean
+  ];
+  export type OutputTuple = [questId: bigint, solver: string, ok: boolean];
   export interface OutputObject {
+    questId: bigint;
     solver: string;
     ok: boolean;
   }
@@ -99,14 +95,21 @@ export namespace ProofAttemptEvent {
   export type LogDescription = TypedLogDescription<Event>;
 }
 
-export namespace QuestInitializedEvent {
+export namespace QuestCreatedEvent {
   export type InputTuple = [
+    questId: BigNumberish,
     title: string,
     bounty: BigNumberish,
     deadline: BigNumberish
   ];
-  export type OutputTuple = [title: string, bounty: bigint, deadline: bigint];
+  export type OutputTuple = [
+    questId: bigint,
+    title: string,
+    bounty: bigint,
+    deadline: bigint
+  ];
   export interface OutputObject {
+    questId: bigint;
     title: string;
     bounty: bigint;
     deadline: bigint;
@@ -118,9 +121,14 @@ export namespace QuestInitializedEvent {
 }
 
 export namespace QuestSolvedEvent {
-  export type InputTuple = [solver: AddressLike, bounty: BigNumberish];
-  export type OutputTuple = [solver: string, bounty: bigint];
+  export type InputTuple = [
+    questId: BigNumberish,
+    solver: AddressLike,
+    bounty: BigNumberish
+  ];
+  export type OutputTuple = [questId: bigint, solver: string, bounty: bigint];
   export interface OutputObject {
+    questId: bigint;
     solver: string;
     bounty: bigint;
   }
@@ -130,11 +138,11 @@ export namespace QuestSolvedEvent {
   export type LogDescription = TypedLogDescription<Event>;
 }
 
-export interface RiddleQuest extends BaseContract {
-  connect(runner?: ContractRunner | null): RiddleQuest;
+export interface RiddleQuestHub extends BaseContract {
+  connect(runner?: ContractRunner | null): RiddleQuestHub;
   waitForDeployment(): Promise<this>;
 
-  interface: RiddleQuestInterface;
+  interface: RiddleQuestHubInterface;
 
   queryFilter<TCEvent extends TypedContractEvent>(
     event: TCEvent,
@@ -173,98 +181,91 @@ export interface RiddleQuest extends BaseContract {
     event?: TCEvent
   ): Promise<this>;
 
-  bounty: TypedContractMethod<[], [bigint], "view">;
+  createRiddle: TypedContractMethod<
+    [
+      _title: string,
+      _prompt: string,
+      _solutionHash: BytesLike,
+      _deadline: BigNumberish
+    ],
+    [bigint],
+    "payable"
+  >;
 
-  deadline: TypedContractMethod<[], [bigint], "view">;
-
-  getFullMetadata: TypedContractMethod<
-    [],
+  getQuest: TypedContractMethod<
+    [questId: BigNumberish],
     [
       [string, string, bigint, bigint, bigint, string] & {
-        _title: string;
-        _prompt: string;
-        _bounty: bigint;
-        _deadline: bigint;
+        title: string;
+        prompt: string;
+        bounty: bigint;
+        deadline: bigint;
         _status: bigint;
-        _winner: string;
+        winner: string;
       }
     ],
     "view"
   >;
 
-  prompt: TypedContractMethod<[], [string], "view">;
+  nextQuestId: TypedContractMethod<[], [bigint], "view">;
 
-  solutionHash: TypedContractMethod<[], [string], "view">;
-
-  solved: TypedContractMethod<[], [boolean], "view">;
-
-  status: TypedContractMethod<[], [bigint], "view">;
+  status: TypedContractMethod<[questId: BigNumberish], [bigint], "view">;
 
   submitProof: TypedContractMethod<
-    [_proof: BytesLike, _publicInputs: BytesLike[]],
+    [questId: BigNumberish, proof: BytesLike],
     [void],
     "nonpayable"
   >;
 
-  title: TypedContractMethod<[], [string], "view">;
-
   verifier: TypedContractMethod<[], [string], "view">;
-
-  winner: TypedContractMethod<[], [string], "view">;
 
   getFunction<T extends ContractMethod = ContractMethod>(
     key: string | FunctionFragment
   ): T;
 
   getFunction(
-    nameOrSignature: "bounty"
-  ): TypedContractMethod<[], [bigint], "view">;
-  getFunction(
-    nameOrSignature: "deadline"
-  ): TypedContractMethod<[], [bigint], "view">;
-  getFunction(
-    nameOrSignature: "getFullMetadata"
+    nameOrSignature: "createRiddle"
   ): TypedContractMethod<
-    [],
+    [
+      _title: string,
+      _prompt: string,
+      _solutionHash: BytesLike,
+      _deadline: BigNumberish
+    ],
+    [bigint],
+    "payable"
+  >;
+  getFunction(
+    nameOrSignature: "getQuest"
+  ): TypedContractMethod<
+    [questId: BigNumberish],
     [
       [string, string, bigint, bigint, bigint, string] & {
-        _title: string;
-        _prompt: string;
-        _bounty: bigint;
-        _deadline: bigint;
+        title: string;
+        prompt: string;
+        bounty: bigint;
+        deadline: bigint;
         _status: bigint;
-        _winner: string;
+        winner: string;
       }
     ],
     "view"
   >;
   getFunction(
-    nameOrSignature: "prompt"
-  ): TypedContractMethod<[], [string], "view">;
-  getFunction(
-    nameOrSignature: "solutionHash"
-  ): TypedContractMethod<[], [string], "view">;
-  getFunction(
-    nameOrSignature: "solved"
-  ): TypedContractMethod<[], [boolean], "view">;
+    nameOrSignature: "nextQuestId"
+  ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
     nameOrSignature: "status"
-  ): TypedContractMethod<[], [bigint], "view">;
+  ): TypedContractMethod<[questId: BigNumberish], [bigint], "view">;
   getFunction(
     nameOrSignature: "submitProof"
   ): TypedContractMethod<
-    [_proof: BytesLike, _publicInputs: BytesLike[]],
+    [questId: BigNumberish, proof: BytesLike],
     [void],
     "nonpayable"
   >;
   getFunction(
-    nameOrSignature: "title"
-  ): TypedContractMethod<[], [string], "view">;
-  getFunction(
     nameOrSignature: "verifier"
-  ): TypedContractMethod<[], [string], "view">;
-  getFunction(
-    nameOrSignature: "winner"
   ): TypedContractMethod<[], [string], "view">;
 
   getEvent(
@@ -275,11 +276,11 @@ export interface RiddleQuest extends BaseContract {
     ProofAttemptEvent.OutputObject
   >;
   getEvent(
-    key: "QuestInitialized"
+    key: "QuestCreated"
   ): TypedContractEvent<
-    QuestInitializedEvent.InputTuple,
-    QuestInitializedEvent.OutputTuple,
-    QuestInitializedEvent.OutputObject
+    QuestCreatedEvent.InputTuple,
+    QuestCreatedEvent.OutputTuple,
+    QuestCreatedEvent.OutputObject
   >;
   getEvent(
     key: "QuestSolved"
@@ -290,7 +291,7 @@ export interface RiddleQuest extends BaseContract {
   >;
 
   filters: {
-    "ProofAttempt(address,bool)": TypedContractEvent<
+    "ProofAttempt(uint256,address,bool)": TypedContractEvent<
       ProofAttemptEvent.InputTuple,
       ProofAttemptEvent.OutputTuple,
       ProofAttemptEvent.OutputObject
@@ -301,18 +302,18 @@ export interface RiddleQuest extends BaseContract {
       ProofAttemptEvent.OutputObject
     >;
 
-    "QuestInitialized(string,uint256,uint256)": TypedContractEvent<
-      QuestInitializedEvent.InputTuple,
-      QuestInitializedEvent.OutputTuple,
-      QuestInitializedEvent.OutputObject
+    "QuestCreated(uint256,string,uint256,uint256)": TypedContractEvent<
+      QuestCreatedEvent.InputTuple,
+      QuestCreatedEvent.OutputTuple,
+      QuestCreatedEvent.OutputObject
     >;
-    QuestInitialized: TypedContractEvent<
-      QuestInitializedEvent.InputTuple,
-      QuestInitializedEvent.OutputTuple,
-      QuestInitializedEvent.OutputObject
+    QuestCreated: TypedContractEvent<
+      QuestCreatedEvent.InputTuple,
+      QuestCreatedEvent.OutputTuple,
+      QuestCreatedEvent.OutputObject
     >;
 
-    "QuestSolved(address,uint256)": TypedContractEvent<
+    "QuestSolved(uint256,address,uint256)": TypedContractEvent<
       QuestSolvedEvent.InputTuple,
       QuestSolvedEvent.OutputTuple,
       QuestSolvedEvent.OutputObject
