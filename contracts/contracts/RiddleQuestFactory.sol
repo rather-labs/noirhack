@@ -21,7 +21,6 @@ contract RiddleQuestFactory {
 
     event QuestCreated(uint256 questId, uint256 bounty, bytes32 solutionHash);
     event QuestSolved(uint256 questId);
-    event BountyClaimed(uint256 questId, address winner);
     event SubmitFailure(address sender, string reason, uint256 questId);
     event CreateFailure(address sender, string reason, uint256 questId);
 
