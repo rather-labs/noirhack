@@ -5,6 +5,7 @@ import { useWatchContractEvent } from 'wagmi';
 import { useSubmitRiddleProof } from '../hooks/useSubmitRiddleProof';
 import { useQuestMetadata } from '../hooks/useQuestMetadata';
 import RiddleQuestFactoryAbi from '../config/abi/RiddleQuestFactory.json';
+import { Spinner } from '../components/ui/Spinner';
 
 const RIDDLE_FACTORY_ADDRESSES: Record<string, `0x${string}`> = {
   '1': '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
@@ -18,32 +19,6 @@ function getOrCreateDeadline(id: string): string {
   const dateIso = new Date(Date.now() + randomMs).toISOString();
   localStorage.setItem(key, dateIso);
   return dateIso;
-}
-
-function Spinner() {
-  return (
-    <div className="absolute inset-0 flex items-center justify-center">
-      <svg
-        className="h-10 w-10 text-accent-riddle animate-spin"
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24">
-        <circle
-          className="opacity-20"
-          cx="12"
-          cy="12"
-          r="10"
-          stroke="currentColor"
-          strokeWidth="4"
-        />
-        <path
-          className="opacity-80"
-          fill="currentColor"
-          d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z"
-        />
-      </svg>
-    </div>
-  );
 }
 
 export default function RiddleDetail() {
