@@ -31,6 +31,7 @@ contract RiddleQuestFactory {
 
     function submitGuess(bytes calldata _proof, uint256 _questId) external {
         require(!solved[_questId], "Quest already solved");
+        require(solutionHash[_questId] != bytes32(0), "Quest not created");
 
         bytes32[] memory publicInputs = new bytes32[](1);
         publicInputs[0] = solutionHash[_questId];
