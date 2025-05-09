@@ -1,5 +1,5 @@
 [package]
-name = "riddle_2"
+name = "riddle"
 type = "bin"
 authors = [""]
 
