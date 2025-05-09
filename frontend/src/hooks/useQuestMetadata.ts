@@ -12,7 +12,7 @@ export interface QuestMetadata {
 export function useQuestMetadata(factory: `0x${string}`, id: number | bigint) {
   const { data, isLoading, isError } = useReadContract({
     address: factory,
-    abi: FactoryAbi,
+    abi: FactoryAbi.abi,
     functionName: 'getQuestMetadata',
     args: [id],
   });

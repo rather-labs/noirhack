@@ -46,7 +46,7 @@ export function useSubmitRiddleProof() {
         setStatus('submitting_proof');
 
         const hash = await writeContractAsync({
-          abi: RiddleQuestFactoryAbi,
+          abi: RiddleQuestFactoryAbi.abi,
           address: contractAddress,
           functionName: 'submitGuess',
           args: [proof, questId],
