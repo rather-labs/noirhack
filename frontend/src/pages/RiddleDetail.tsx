@@ -97,6 +97,9 @@ export default function RiddleDetail() {
         ]);
       });
     },
+    onError(error) {
+      console.error('Error listening for SubmitFailure:', error);
+    },
   });
 
   useWatchContractEvent({
@@ -115,7 +118,9 @@ export default function RiddleDetail() {
 
   if (!factory) {
     return (
-      <div className="p-6 text-center text-white/70">Quest not found 🤔</div>
+      <div className="absolute inset-0 border flex justify-center items-center text-white/70">
+        Quest not found 🤔
+      </div>
     );
   }
 
@@ -175,7 +180,8 @@ export default function RiddleDetail() {
             disabled={
               submitStatus === 'generating_proof' ||
               submitStatus === 'submitting_proof' ||
-              submitStatus === 'confirming_tx'
+              submitStatus === 'confirming_tx' ||
+              solved
             }
           />
           <button
@@ -184,12 +190,12 @@ export default function RiddleDetail() {
               !answer.trim() ||
               submitStatus === 'generating_proof' ||
               submitStatus === 'submitting_proof' ||
-              submitStatus === 'confirming_tx'
+              submitStatus === 'confirming_tx' ||
+              solved
             }
             className="inline-flex items-center justify-center gap-2 rounded-full bg-accent-riddle px-6 py-2 text-sm font-medium hover:bg-accent-riddle/80 disabled:opacity-40">
-            {(submitStatus === 'generating_proof' ||
-              submitStatus === 'submitting_proof' ||
-              submitStatus === 'confirming_tx') && <Spinner />}
+            {submitStatus === 'generating_proof' ||
+              submitStatus === 'submitting_proof'}
             {submitStatus === 'generating_proof'
               ? 'Generating proof…'
               : submitStatus === 'submitting_proof'

@@ -34,7 +34,7 @@ export default function QuestsPage() {
   });
 
   return (
-    <div className="p-6">
+    <div className="px-6 pb-6 pt-16">
       <FilterBar
         selectedType={typeFilter}
         onTypeChange={setTypeFilter}

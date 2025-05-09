@@ -6,8 +6,8 @@ export default function App() {
   const location = useLocation();
 
   return (
-    <div className="min-h-screen bg-color-black text-color-white font-sans">
-      <header className="flex items-center justify-between p-4">
+    <div className="relative min-h-screen bg-color-black text-color-white font-sans">
+      <header className="absolute w-full flex items-center justify-between p-4 z-100">
         <h1 className="text-xl font-bold tracking-widest">
           on-chain<span className="font-light"> quests</span>
         </h1>
@@ -21,7 +21,7 @@ export default function App() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.4, ease: 'easeOut' }}
-          className="p-6">
+          className="relative min-h-screen p-6">
           <Outlet />
         </motion.main>
       </AnimatePresence>
