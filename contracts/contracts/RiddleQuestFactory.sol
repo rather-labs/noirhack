@@ -22,6 +22,8 @@ contract RiddleQuestFactory {
     event QuestCreated(uint256 questId, uint256 bounty, bytes32 solutionHash);
     event QuestSolved(uint256 questId);
     event BountyClaimed(uint256 questId, address winner);
+    event SubmitFailure(address sender, string reason, uint256 questId);
+    event CreateFailure(address sender, string reason, uint256 questId);
 
     constructor(IVerifier _verifier) payable {
         questId = 0;
@@ -30,8 +32,14 @@ contract RiddleQuestFactory {
     }
 
     function submitGuess(bytes calldata _proof, uint256 _questId) external {
-        require(!solved[_questId], "Quest already solved");
-        require(solutionHash[_questId] != bytes32(0), "Quest not created");
+        if (solved[_questId]) {
+            emit SubmitFailure(msg.sender, "Quest already solved", _questId);
+            revert("Quest already solved");
+        }
+        if (solutionHash[_questId] == bytes32(0)) {
+            emit SubmitFailure(msg.sender, "Quest not created", _questId);
+            revert("Quest not created");
+        }
 
         bytes32[] memory publicInputs = new bytes32[](1);
         publicInputs[0] = solutionHash[_questId];
@@ -45,6 +53,7 @@ contract RiddleQuestFactory {
                 }
             }
         } catch {
+            emit SubmitFailure(msg.sender, "Proof verification failed", _questId);
             revert("Proof verification failed");
         }
     }
@@ -53,8 +62,14 @@ contract RiddleQuestFactory {
         string memory _riddle,
         bytes32 _solutionHash
     ) external payable {
-        require(msg.value > 0, "Bounty required");
-        require(_solutionHash != bytes32(0), "Solution hash required");
+        if (msg.value == 0) {
+            emit CreateFailure(msg.sender, "Bounty required", questId+1);
+            revert("Bounty required");
+        }
+        if (_solutionHash == bytes32(0)) {
+            emit CreateFailure(msg.sender, "Solution hash required", questId+1);
+            revert("Solution hash required");
+        }
 
         questId++;
         solutionHash[questId] = _solutionHash;
