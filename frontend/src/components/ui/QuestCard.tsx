@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 
 export type QuestType = 'riddle' | 'vote';
-export type QuestStatus = 'open' | 'closed' | 'completed';
+export type QuestStatus = 'open' | 'closed' | 'completed' | 'solved'; 
 
 export interface QuestCardProps {
   href: string;

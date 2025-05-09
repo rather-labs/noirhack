@@ -7,9 +7,8 @@ import { useQuestMetadata } from '../hooks/useQuestMetadata';
 import RiddleQuestFactoryAbi from '../config/abi/RiddleQuestFactory.json';
 import { Spinner } from '../components/ui/Spinner';
 
-const RIDDLE_FACTORY_ADDRESSES: Record<string, `0x${string}`> = {
-  '1': '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
-};
+export const RIDDLE_FACTORY_ADDRESS = '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0';
+
 
 function getOrCreateDeadline(id: string): string {
   const key = `deadline_${id}`;
@@ -23,7 +22,7 @@ function getOrCreateDeadline(id: string): string {
 
 export default function RiddleDetail() {
   const { id = '' } = useParams();
-  const factory = RIDDLE_FACTORY_ADDRESSES[id];
+  const factory = RIDDLE_FACTORY_ADDRESS;
   const questId = Number(id);
 
   const { data: meta, isLoading } = useQuestMetadata(factory, questId);
@@ -60,21 +59,21 @@ export default function RiddleDetail() {
     address: factory,
     abi: RiddleQuestFactoryAbi.abi,
     eventName: 'SubmitFailure',
-    args: [undefined, undefined, BigInt(questId)],
+    args: [BigInt(questId), undefined, undefined],
     enabled: !meta?.solved,
     onLogs(logs) {
-      logs.forEach((log) => {
-        /** @ts-expect-error - iknow */
+      for (const log of logs) {
         const [, solver] = log.args as [bigint, `0x${string}`];
         setActivity((prev) => [
           `❌ ${solver.slice(0, 6)}… made an attempt`,
           ...prev,
         ]);
-      });
+      }
     },
     onError(error) {
       console.error('Error listening for SubmitFailure:', error);
     },
+    pollingInterval: 15_000,
   });
 
   useWatchContractEvent({
@@ -89,6 +88,7 @@ export default function RiddleDetail() {
         ...prev,
       ]);
     },
+    pollingInterval: 15_000,
   });
 
   if (!factory) {

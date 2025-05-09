@@ -21,8 +21,8 @@ contract RiddleQuestFactory {
 
     event QuestCreated(uint256 questId, uint256 bounty, bytes32 solutionHash);
     event QuestSolved(uint256 questId);
-    event SubmitFailure(address sender, string reason, uint256 questId);
-    event CreateFailure(address sender, string reason, uint256 questId);
+    event SubmitFailure(uint256 questId, address sender, string reason);
+    event CreateFailure(uint256 questId, address sender, string reason);
 
     constructor(IVerifier _verifier) payable {
         questId = 0;
@@ -32,11 +32,11 @@ contract RiddleQuestFactory {
 
     function submitGuess(bytes calldata _proof, uint256 _questId) external {
         if (solved[_questId]) {
-            emit SubmitFailure(msg.sender, "Quest already solved", _questId);
+            emit SubmitFailure(_questId, msg.sender, "Quest already solved");
             revert("Quest already solved");
         }
         if (solutionHash[_questId] == bytes32(0)) {
-            emit SubmitFailure(msg.sender, "Quest not created", _questId);
+            emit SubmitFailure(_questId, msg.sender, "Quest not created");
             revert("Quest not created");
         }
 
@@ -52,7 +52,7 @@ contract RiddleQuestFactory {
                 }
             }
         } catch {
-            emit SubmitFailure(msg.sender, "Proof verification failed", _questId);
+            emit SubmitFailure(_questId, msg.sender, "Proof verification failed");
             revert("Proof verification failed");
         }
     }
@@ -62,11 +62,11 @@ contract RiddleQuestFactory {
         bytes32 _solutionHash
     ) external payable {
         if (msg.value == 0) {
-            emit CreateFailure(msg.sender, "Bounty required", questId+1);
+            emit CreateFailure(questId+1, msg.sender, "Bounty required");
             revert("Bounty required");
         }
         if (_solutionHash == bytes32(0)) {
-            emit CreateFailure(msg.sender, "Solution hash required", questId+1);
+            emit CreateFailure(questId+1, msg.sender, "Solution hash required");
             revert("Solution hash required");
         }
 
