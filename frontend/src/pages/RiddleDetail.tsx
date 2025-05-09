@@ -1,60 +1,83 @@
-import { useParams, Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { type Quest } from '../components/ui/QuestGrid';
-import { useSubmitRiddleProof } from '../hooks/useSubmitRiddleProof';
-import RiddleQuestFactoryAbi from '../config/abi/RiddleQuestFactory.json';
 import { useWatchContractEvent } from 'wagmi';
 
-const MOCK_RIDDLES: Record<string, Quest & { prompt: string }> = {
-  '1': {
-    id: 1,
-    type: 'riddle',
-    status: 'open',
-    title: 'The Sphinx’s Cipher',
-    excerpt: '',
-    prompt:
-      `“I speak without a mouth and hear without ears. ` +
-      `I have nobody, but I come alive with the wind. What am I?”`,
-  },
+import { useSubmitRiddleProof } from '../hooks/useSubmitRiddleProof';
+import { useQuestMetadata } from '../hooks/useQuestMetadata';
+import RiddleQuestFactoryAbi from '../config/abi/RiddleQuestFactory.json';
+
+const RIDDLE_FACTORY_ADDRESSES: Record<string, `0x${string}`> = {
+  '1': '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
 };
 
-const RIDDLE_QUESTS_ADDRESES: Record<string, `0x${string}`> = {
-  '1': `0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0`,
-};
+function getOrCreateDeadline(id: string): string {
+  const key = `deadline_${id}`;
+  const stored = localStorage.getItem(key);
+  if (stored) return stored;
+  const randomMs = Math.floor(Math.random() * 10 * 24 * 60 * 60 * 1000);
+  const dateIso = new Date(Date.now() + randomMs).toISOString();
+  localStorage.setItem(key, dateIso);
+  return dateIso;
+}
+
+function Spinner() {
+  return (
+    <div className="absolute inset-0 flex items-center justify-center">
+      <svg
+        className="h-10 w-10 text-accent-riddle animate-spin"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24">
+        <circle
+          className="opacity-20"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          strokeWidth="4"
+        />
+        <path
+          className="opacity-80"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z"
+        />
+      </svg>
+    </div>
+  );
+}
 
 export default function RiddleDetail() {
   const { id = '' } = useParams();
-  const quest = MOCK_RIDDLES[id];
-  const factory = RIDDLE_QUESTS_ADDRESES[id];
+  const factory = RIDDLE_FACTORY_ADDRESSES[id];
+  const questId = Number(id);
+
+  const { data: meta, isLoading } = useQuestMetadata(factory, questId);
 
   const [answer, setAnswer] = useState('');
   const [activity, setActivity] = useState<string[]>(() => {
-    const key = `attempts_${id}`;
-    const stored = localStorage.getItem(key);
+    const stored = localStorage.getItem(`attempts_${id}`);
     return stored ? JSON.parse(stored) : [];
   });
-
-  const { submit: submitRiddle, status: submitStatus } = useSubmitRiddleProof();
 
   useEffect(() => {
     localStorage.setItem(`attempts_${id}`, JSON.stringify(activity));
   }, [activity, id]);
 
+  const { submit, status: submitStatus } = useSubmitRiddleProof();
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!answer.trim()) return;
-
     try {
-      await submitRiddle({
+      await submit({
         guess: answer,
-        questId: quest.id,
+        questId,
         contractAddress: factory,
       });
-
       setActivity((prev) => [`🔄 You submitted “${answer.trim()}”`, ...prev]);
       setAnswer('');
     } catch {
-      /** */
+      /* toast handled by hook */
     }
   }
 
@@ -62,14 +85,11 @@ export default function RiddleDetail() {
     address: factory,
     abi: RiddleQuestFactoryAbi,
     eventName: 'SubmitFailure',
-    args: [BigInt(quest.id)],
+    args: [BigInt(questId)],
     onLogs(logs) {
       logs.forEach((log) => {
-        /** @ts-expect-error - i know */
-        const [questId, solver] = log.args as [bigint, `0x${string}`];
-
-        if (Number(questId) !== quest.id) return;
-
+        /** @ts-expect-error - iknow */
+        const [, solver] = log.args as [bigint, `0x${string}`];
         setActivity((prev) => [
           `❌ ${solver.slice(0, 6)}… made an attempt`,
           ...prev,
@@ -82,8 +102,8 @@ export default function RiddleDetail() {
     address: factory,
     abi: RiddleQuestFactoryAbi,
     eventName: 'QuestSolved',
-    onLogs: ([questId]) => {
-      if (Number(questId) !== quest.id) return;
+    args: [BigInt(questId)],
+    onLogs() {
       setActivity((prev) => [
         '🎉 Proof verified! Quest marked as solved.',
         ...prev,
@@ -95,24 +115,34 @@ export default function RiddleDetail() {
     address: factory,
     abi: RiddleQuestFactoryAbi,
     eventName: 'BountyClaimed',
-    onLogs: ([questId, winner]) => {
-      if (Number(questId) !== quest.id) return;
+    args: [BigInt(questId)],
+    onLogs(logs) {
+      /** @ts-expect-error - iknow */
+      const [, winner] = logs[0].args as [bigint, `0x${string}`];
       setActivity((prev) => [
-        /** @ts-expect-error - i know */
         `🏆 Bounty claimed by ${winner.slice(0, 6)}…`,
         ...prev,
       ]);
     },
   });
 
-  if (!quest) {
+  if (!factory) {
     return (
       <div className="p-6 text-center text-white/70">Quest not found 🤔</div>
     );
   }
 
+  if (isLoading || !meta) {
+    return <Spinner />;
+  }
+
+  const { prompt, bounty, solved } = meta;
+  const deadlineStr = new Date(getOrCreateDeadline(id)).toLocaleDateString();
+  const statusLabel = solved ? 'solved' : 'open';
+
   return (
     <div className="mx-auto max-w-2xl p-6 pb-16">
+      {/* Back link */}
       <Link
         to="/quests"
         className="mb-6 inline-flex items-center gap-1 text-sm text-white/70 hover:underline">
@@ -125,78 +155,64 @@ export default function RiddleDetail() {
           <span className="inline-flex items-center gap-1 rounded-full bg-accent-riddle/20 px-2 py-0.5 text-accent-riddle">
             🎲 Puzzle
           </span>
-          <span className="rounded-full bg-status-open/20 px-2 py-0.5 text-status-open uppercase tracking-wide">
-            {quest.status}
+          <span
+            className={`rounded-full px-2 py-0.5 uppercase tracking-wide ${
+              solved
+                ? 'bg-status-completed/20 text-status-completed'
+                : 'bg-status-open/20 text-status-open'
+            }`}>
+            {statusLabel}
           </span>
         </div>
         <div className="text-xs text-white/60">
-          Reward • 2 ETH · Ends • 18 May 2025
+          Reward • {bounty} ETH · Ends • {deadlineStr}
         </div>
       </div>
 
       {/* Prompt */}
       <pre className="whitespace-pre-wrap rounded-xl bg-white/5 p-6 text-sm leading-relaxed">
-        {quest.prompt}
+        {prompt}
       </pre>
 
       {/* Answer form */}
-      <form
-        onSubmit={handleSubmit}
-        className="mt-6 flex flex-col gap-4 sm:flex-row">
-        <input
-          value={answer}
-          onChange={(e) => setAnswer(e.target.value)}
-          type="text"
-          placeholder="Your answer..."
-          className="flex-1 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm placeholder-white/40 focus:border-accent-riddle focus:outline-none"
-          disabled={
-            submitStatus === 'generating_proof' ||
-            submitStatus === 'submitting_proof' ||
-            submitStatus === 'confirming_tx'
-          }
-        />
-
-        <button
-          type="submit"
-          disabled={
-            !answer.trim() ||
-            submitStatus === 'generating_proof' ||
-            submitStatus === 'submitting_proof'
-          }
-          className="inline-flex items-center justify-center gap-2 rounded-full bg-accent-riddle px-6 py-2 text-sm font-medium hover:bg-accent-riddle/80 disabled:opacity-40">
-          {/* Spinner during work */}
-          {(submitStatus === 'generating_proof' ||
-            submitStatus === 'submitting_proof') && (
-            <svg
-              className="h-4 w-4 animate-spin"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24">
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z"
-              />
-            </svg>
-          )}
-
-          {submitStatus === 'generating_proof'
-            ? 'Generating proof…'
-            : submitStatus === 'submitting_proof'
-            ? 'Submitting…'
-            : submitStatus === 'confirming_tx'
-            ? 'Confirming…'
-            : 'Submit answer →'}
-        </button>
-      </form>
+      {!solved && (
+        <form
+          onSubmit={handleSubmit}
+          className="mt-6 flex flex-col gap-4 sm:flex-row">
+          <input
+            value={answer}
+            onChange={(e) => setAnswer(e.target.value)}
+            type="text"
+            placeholder="Your answer..."
+            className="flex-1 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm placeholder-white/40 focus:border-accent-riddle focus:outline-none"
+            disabled={
+              submitStatus === 'generating_proof' ||
+              submitStatus === 'submitting_proof' ||
+              submitStatus === 'confirming_tx'
+            }
+          />
+          <button
+            type="submit"
+            disabled={
+              !answer.trim() ||
+              submitStatus === 'generating_proof' ||
+              submitStatus === 'submitting_proof' ||
+              submitStatus === 'confirming_tx'
+            }
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-accent-riddle px-6 py-2 text-sm font-medium hover:bg-accent-riddle/80 disabled:opacity-40">
+            {(submitStatus === 'generating_proof' ||
+              submitStatus === 'submitting_proof' ||
+              submitStatus === 'confirming_tx') && <Spinner />}
+            {submitStatus === 'generating_proof'
+              ? 'Generating proof…'
+              : submitStatus === 'submitting_proof'
+              ? 'Submitting…'
+              : submitStatus === 'confirming_tx'
+              ? 'Confirming…'
+              : 'Submit answer →'}
+          </button>
+        </form>
+      )}
 
       {/* Activity feed */}
       <section className="mt-12">

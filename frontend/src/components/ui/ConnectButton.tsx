@@ -38,9 +38,7 @@ export default function ConnectButton() {
       className="rounded-full bg-accent-riddle px-6 py-2 text-sm font-medium
                  hover:bg-accent-riddle/80 disabled:opacity-40"
       disabled={isPending}>
-      {isPending && injected.id === 'injected'
-        ? 'Connecting…'
-        : `Connect with ${injected.name}`}
+      {isPending && injected.id === 'injected' ? 'Connecting…' : `Connect`}
     </button>
   );
 }
