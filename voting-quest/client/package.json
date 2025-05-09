@@ -10,14 +10,14 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@aztec/stdlib": "0.82.2",
-    "@aztec/foundation": "0.82.2",
-    "@aztec/accounts": "0.82.2",
-    "@aztec/aztec.js": "0.82.2",
-    "@aztec/bb.js": "0.82.2",
-    "@noir-lang/noir_js": "1.0.0-beta.3",
-    "@noir-lang/noir_wasm": "1.0.0-beta.3",
-    "@noir-lang/types": "1.0.0-beta.3",
+    "@aztec/accounts": "0.85.0",
+    "@aztec/aztec.js": "0.85.0",
+    "@aztec/bb.js": "0.85.0",
+    "@aztec/foundation": "0.85.0",
+    "@aztec/stdlib": "0.85.0",
+    "@noir-lang/noir_js": "1.0.0-beta.4-d8e4de4.nightly",
+    "@noir-lang/noir_wasm": "1.0.0-beta.4-d8e4de4.nightly",
+    "@noir-lang/types": "1.0.0-beta.4-d8e4de4.nightly",
     "msgpackr": "^1.11.2",
     "next": "15.3.1",
     "next-auth": "^4.24.7",
@@ -35,6 +35,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.3.1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "worker-loader": "^3.0.8"
   }
 }

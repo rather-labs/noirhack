@@ -54,11 +54,20 @@ export async function generateProof(inputs: InputMap): Promise<ProofDataForRecur
     toast.remove("toast-message");
     
     toast.loading("Generating inner proof... ⏳", {duration: 1_000_000, id: "toast-message"});
-    const proof = await backend.generateProofForRecursiveAggregation(witness);
+    const proof = await backend.generateProof(witness);
     console.log("proof", proof)
     toast.remove("toast-message");
       
-    return proof;
+    toast.loading("Verifying proof... ⏳", {duration: 1_000_000, id: "toast-message"});
+    const isValid = await backend.verifyProof(proof);
+    if (isValid) {
+      toast.success("Proof verified successfully! 🎉", {duration: 100_000, id: "proof-verified"});
+    } else {
+      toast.error("Proof verification failed! 🚫", {duration: 100_000, id: "proof-verification-failed"});
+    }
+    toast.remove("toast-message");
+
+    return proof as unknown as ProofDataForRecursion;
   } catch (error: unknown) {
     toast.remove("toast-message");
     toast.error("Failed to generate proof! 🚫", {duration: 10_000, id: "proof-generation-failed"});
@@ -112,9 +121,7 @@ export async function verifyProof(proofToVerify: ProofDataForRecursion): Promise
     console.log("recursivePoofInputs", inputs)
 
     toast.loading("Getting circuit... ⏳", {duration: 1_000_000, id: "toast-message"});
-    // Fails due to fetch on window not being defined
-    //const circuit = (await getCircuit()).program as CompiledCircuit;
-	  const circuit = circuitVerifyJSON as CompiledCircuit;
+    const circuit = circuitVerifyJSON as CompiledCircuit;
     toast.remove("toast-message");
 
   	console.log("circuit", circuit)
@@ -229,27 +236,9 @@ export async function castVoteOnChain(proof: ProofDataForRecursion, identifier: 
       maxFeesPerGas,
       maxPriorityFeesPerGas,
     );
-    //const gasSettings = {
-    //  gasLimits:            { daGas: 0n,  l2Gas: 600_000n },
-    //  teardownGasLimits:    { daGas: 0n,  l2Gas: 0n },
-    //  maxFeesPerGas:        { daFeePerDaGas: 0n,  l2FeePerDaGas: 0n },
-    //  maxPriorityFeesPerGas:{ daFeePerDaGas: 0n,  l2FeePerDaGas: 0n },
-    //}
 
     // 4)  Choose how you’ll *pay* (here: pay directly from your fee‑juice balance)
     const paymentMethod = new FeeJuicePaymentMethod(wallet.getAddress());
-
-    //export type UserFeeOptions = {
-    ///** The fee payment method to use */
-    //paymentMethod?: FeePaymentMethod;
-    ///** The gas settings */
-    //gasSettings?: Partial<FieldsOf<GasSettings>>;
-    ///** Percentage to pad the base fee by, if empty, defaults to 0.5 */
-    //baseFeePadding?: number;
-    ///** Whether to run an initial simulation of the tx with high gas limit to figure out actual gas settings. */
-    //estimateGas?: boolean;
-    ///** Percentage to pad the estimated gas limits by, if empty, defaults to 0.1. Only relevant if estimateGas is set. */
-    //estimatedGasPadding?: number;
 
     // Call the cast_vote function
     const tx = await contract.methods.cast_vote(
@@ -261,8 +250,8 @@ export async function castVoteOnChain(proof: ProofDataForRecursion, identifier: 
     ).send(
       { fee : {
         gasSettings,
-        //paymentMethod, 
-        //estimateGas: false
+        paymentMethod, 
+        estimateGas: false
         }
       }
     ).wait();
