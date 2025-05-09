@@ -6,8 +6,6 @@ import { readContract } from 'wagmi/actions';
 import FactoryAbi from '../config/abi/RiddleQuestFactory.json';
 import { RIDDLE_FACTORY_ADDRESS } from './RiddleDetail';
 
-const ALL_QUESTS: Quest[] = [];
-
 const placeHolderTitles = [
   "The Sphinx's Cipher",
   "Ethereum's Enigma",
@@ -57,6 +55,7 @@ export default function QuestsPage() {
 
   useEffect(() => {
     if (!metadata) return;
+    const ALL_QUESTS: Quest[] = [];
     async function fetchQuestMetadata() {
     // Loop through quest IDs from 1 to the total count
       for (let i = Number(metadata[2]); i <= Number(metadata[1]); i++) {
