@@ -85,7 +85,8 @@ export default function RiddleDetail() {
     address: factory,
     abi: RiddleQuestFactoryAbi,
     eventName: 'SubmitFailure',
-    args: [BigInt(questId)],
+    args: [undefined, undefined, BigInt(questId)],
+    enabled: !meta?.solved,
     onLogs(logs) {
       logs.forEach((log) => {
         /** @ts-expect-error - iknow */
@@ -103,24 +104,10 @@ export default function RiddleDetail() {
     abi: RiddleQuestFactoryAbi,
     eventName: 'QuestSolved',
     args: [BigInt(questId)],
+    enabled: !meta?.solved,
     onLogs() {
       setActivity((prev) => [
         '🎉 Proof verified! Quest marked as solved.',
-        ...prev,
-      ]);
-    },
-  });
-
-  useWatchContractEvent({
-    address: factory,
-    abi: RiddleQuestFactoryAbi,
-    eventName: 'BountyClaimed',
-    args: [BigInt(questId)],
-    onLogs(logs) {
-      /** @ts-expect-error - iknow */
-      const [, winner] = logs[0].args as [bigint, `0x${string}`];
-      setActivity((prev) => [
-        `🏆 Bounty claimed by ${winner.slice(0, 6)}…`,
         ...prev,
       ]);
     },

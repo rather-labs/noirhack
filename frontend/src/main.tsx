@@ -22,11 +22,14 @@ import { Toaster } from 'react-hot-toast';
 const routes: RouteObject[] = [
   {
     path: '/',
+    element: <Home />,
+  },
+  {
+    path: '/quests',
     element: <App />,
     children: [
-      { index: true, element: <Home /> },
-      { path: 'quests', element: <QuestsPage /> },
-      { path: 'quests/:id', element: <RiddleDetail /> },
+      { index: true, element: <QuestsPage /> },
+      { path: ':id', element: <RiddleDetail /> },
     ],
   },
 ];
