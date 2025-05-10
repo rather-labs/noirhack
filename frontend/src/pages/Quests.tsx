@@ -9,9 +9,7 @@ import { placeHolderExcerpts, placeHolderTitles } from '../utils/constant';
 
 export default function QuestsPage() {
   // Read metadata for a the quest factory
-  const { 
-    data: metadata,
-  } = useReadContract({
+  const { data: metadata } = useReadContract({
     address: RIDDLE_FACTORY_ADDRESS as `0x${string}`,
     abi: FactoryAbi.abi,
     functionName: 'getMetadata',
@@ -28,22 +26,21 @@ export default function QuestsPage() {
   >('all');
 
   const [visibleQuests, setVisibleQuests] = useState<Quest[]>([]);
-  
 
   useEffect(() => {
     if (!metadata) return;
     const ALL_QUESTS: Quest[] = [];
     async function fetchQuestMetadata() {
-      const data = metadata as unknown as [string, number, number];
       // Loop through quest IDs from 1 to the total count
-      for (let i = Number(data[2]); i <= Number(data[1]); i++) {
-        const questMetadata = await readContract(config, {
+      /** @ts-expect-error - iknow */
+      for (let i = 1; i <= Number(metadata[1]); i++) {
+        const questMetadata = (await readContract(config, {
           address: RIDDLE_FACTORY_ADDRESS as `0x${string}`,
           abi: FactoryAbi.abi,
           functionName: 'getQuestMetadata',
           args: [i],
-        }) as unknown as [string, number, string, boolean];
-         
+        })) as unknown as [string, number, string, boolean];
+
         ALL_QUESTS.push({
           id: i,
           type: 'riddle',
@@ -73,7 +70,6 @@ export default function QuestsPage() {
       />
 
       <QuestGrid quests={visibleQuests} />
-      
     </div>
   );
 }

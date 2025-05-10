@@ -67,7 +67,8 @@ export function useSubmitRiddleProof() {
       } catch (err) {
         const message =
           err instanceof Error ? err.message : String(err ?? 'Unknown error');
-        toast.error(message, { id: toastId });
+
+        toast.error('Proof verification failed', { id: toastId });
         setError(message);
         setStatus('error');
         throw err;
