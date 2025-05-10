@@ -40,7 +40,7 @@ npm run deploy
 
 ## Run the client with the quest hub
 ```bash
-cd contract
+cd frontend
 ```
 
 ```bash
