@@ -34,6 +34,7 @@ const statusText = {
   open: 'text-status-open',
   closed: 'text-status-closed',
   completed: 'text-status-completed',
+  solved: 'text-status-solved',
 } as const;
 
 export default function QuestCard({

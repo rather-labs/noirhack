@@ -61,7 +61,7 @@ export default function RiddleDetail() {
     eventName: 'SubmitFailure',
     args: [BigInt(questId), undefined, undefined],
     enabled: !meta?.solved,
-    onLogs(logs) {
+    onLogs(logs : any) {
       for (const log of logs) {
         /** @ts-expect-error - iknow */
         const [, solver] = log.args as [bigint, `0x${string}`];

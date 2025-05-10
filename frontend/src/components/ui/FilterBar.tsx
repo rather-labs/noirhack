@@ -24,6 +24,7 @@ const statusColors: Record<QuestStatus, string> = {
   open: 'bg-status-open/20 text-status-open',
   closed: 'bg-status-closed/20 text-status-closed',
   completed: 'bg-status-completed/20 text-status-completed',
+  solved: 'bg-status-solved/20 text-status-solved',
 };
 
 export default function FilterBar({
