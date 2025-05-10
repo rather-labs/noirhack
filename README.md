@@ -47,4 +47,8 @@ cd frontend
 npm run dev
 ```
 
-## Have fun!
+noir? **gud**
+
+DEMO: https://www.youtube.com/watch?v=6ug8IPlAr40
+
+
