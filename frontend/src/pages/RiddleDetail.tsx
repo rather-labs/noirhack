@@ -7,8 +7,8 @@ import { useQuestMetadata } from '../hooks/useQuestMetadata';
 import RiddleQuestFactoryAbi from '../config/abi/RiddleQuestFactory.json';
 import { Spinner } from '../components/ui/Spinner';
 
-export const RIDDLE_FACTORY_ADDRESS = '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0';
-
+export const RIDDLE_FACTORY_ADDRESS =
+  '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0';
 
 function getOrCreateDeadline(id: string): string {
   const key = `deadline_${id}`;
@@ -63,6 +63,7 @@ export default function RiddleDetail() {
     enabled: !meta?.solved,
     onLogs(logs) {
       for (const log of logs) {
+        /** @ts-expect-error - iknow */
         const [, solver] = log.args as [bigint, `0x${string}`];
         setActivity((prev) => [
           `❌ ${solver.slice(0, 6)}… made an attempt`,
