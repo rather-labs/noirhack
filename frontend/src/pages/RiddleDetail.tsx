@@ -63,7 +63,6 @@ export default function RiddleDetail() {
     enabled: !meta?.solved,
     onLogs(logs : any) {
       for (const log of logs) {
-        /** @ts-expect-error - iknow */
         const [, solver] = log.args as [bigint, `0x${string}`];
         setActivity((prev) => [
           `❌ ${solver.slice(0, 6)}… made an attempt`,

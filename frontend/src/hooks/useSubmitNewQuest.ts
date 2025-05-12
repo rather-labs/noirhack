@@ -5,10 +5,12 @@ import { usePublicClient, useWriteContract } from 'wagmi';
 
 import RiddleQuestFactoryAbi from '../config/abi/RiddleQuestFactory.json';
 import { stringToAsciiArray } from '../utils';
+import { parseEther } from 'viem';
 
 interface SubmitProofParams {
-  guess: string;
-  questId: number;
+  riddle: string;
+  answer: string;
+  bounty: number;
   contractAddress: `0x${string}`;
 }
 
@@ -20,7 +22,7 @@ export type SubmitStatus =
   | 'success'
   | 'error';
 
-export function useSubmitRiddleProof() {
+export function useSubmitNewQuest() {
   const publicClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
 
@@ -33,26 +35,27 @@ export function useSubmitRiddleProof() {
   }, []);
 
   const submit = useCallback(
-    async ({ guess, questId, contractAddress }: SubmitProofParams) => {
+    async ({ riddle, answer, bounty, contractAddress }: SubmitProofParams) => {
       const toastId = toast.loading('Generating proof…');
 
       try {
         setStatus('generating_proof');
 
-        const parsedGuess = stringToAsciiArray(guess, 6);
-        const { proof } = await generateProof({ guess: parsedGuess });
+        const parsedAnswer = stringToAsciiArray(answer, 6);
+        const { publicInputs } = await generateProof({ guess: parsedAnswer });
 
-        toast.loading('Submitting proof to chain…', { id: toastId });
+        toast.loading('Submitting new quest to chain…', { id: toastId });
         setStatus('submitting_proof');
 
         const hash = await writeContractAsync({
           abi: RiddleQuestFactoryAbi.abi,
           address: contractAddress,
-          functionName: 'submitGuess',
-          args: [proof, questId],
+          functionName: 'createRiddle',
+          args: [riddle, publicInputs[0]],
+          value: parseEther(bounty.toString()),
         });
 
-        toast.success('Proof submitted! Waiting for confirmation…', {
+        toast.success('New quest submitted! Waiting for confirmation…', {
           id: toastId,
         });
         toast.loading('Waiting for confirmations…', { id: toastId });

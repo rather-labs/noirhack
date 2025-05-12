@@ -69,9 +69,9 @@ export default function QuestCard({
         {/* Title + excerpt */}
         <h3 className="mb-1 text-lg font-bold">{title}</h3>
         <p className="mb-6 line-clamp-3 text-sm text-white/70">{excerpt}</p>
-
         {/* CTA */}
         <button
+          type="button"
           className={`self-start rounded-full px-4 py-2 text-sm font-medium transition-colors ${a.button}`}>
           {a.cta}
         </button>
