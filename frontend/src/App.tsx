@@ -24,6 +24,17 @@ export default function App() {
           <Outlet />
         </motion.main>
       </AnimatePresence>
+
+      <footer
+        role="contentinfo"
+        className="absolute bottom-5 w-full flex justify-center gap-0
+             text-sm pt-5 text-white border-t border-white/10">
+        <img
+          src="https://cdn.prod.website-files.com/629ffbf53482a7f051677d6b/64bad8b2f17c29463caffcc9_logo%20RL.svg"
+          loading="lazy"
+          alt="Rather Labs logo"
+        />
+      </footer>
     </div>
   );
 }
