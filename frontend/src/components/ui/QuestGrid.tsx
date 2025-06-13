@@ -1,21 +1,27 @@
 import QuestCard, { type QuestType, type QuestStatus } from './QuestCard';
+import { Spinner } from './Spinner';
 
 export interface Quest {
   id: number;
+  solutionHash: string;
   type: QuestType;
   status: QuestStatus;
+  bounty: bigint;
+  riddle: string;
   title: string;
   excerpt: string;
 }
 
 interface QuestGridProps {
   quests: Quest[];
+  isLoading: boolean;
   baseHref?: string;
   emptyMessage?: string;
 }
 
 export default function QuestGrid({
   quests,
+  isLoading,
   baseHref = '/quests',
   emptyMessage = 'No quests found.',
 }: QuestGridProps) {
@@ -26,6 +32,12 @@ export default function QuestGrid({
         <p className="text-sm">{emptyMessage}</p>
       </div>
     );
+  }
+
+  if (isLoading) {
+    <div className="flex flex-col items-center gap-2 py-20 text-white/70">
+      <Spinner />
+    </div>;
   }
 
   return (

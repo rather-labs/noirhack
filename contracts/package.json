@@ -1,7 +1,7 @@
 {
   "scripts": {
     "start": "npx hardhat node",
-    "deploy:riddle": "npx hardhat ignition deploy ./ignition/modules/RiddleQuest.ts --network sepolia --verify --verbose --show-stack-traces",
+    "deploy:riddle": "npx hardhat ignition deploy ./ignition/modules/RiddleQuest.ts --network sepolia --verify",
     "copy:factory": "cp artifacts/contracts/RiddleQuestFactory.sol/RiddleQuestFactory.json ../frontend/src/config/abi/RiddleQuestFactory.json",
     "copy:verifier": "cp artifacts/contracts/RiddleVerifier.sol/HonkVerifier.json ../frontend/src/config/abi/HonkVerifier.json",
     "deploy": "npm run deploy:riddle && npm run copy:factory && npm run copy:verifier"

@@ -1,14 +1,9 @@
 import { Link, useParams } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import { useWatchContractEvent } from 'wagmi';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { useSubmitRiddleProof } from '../hooks/useSubmitRiddleProof';
-import { useQuestMetadata } from '../hooks/useQuestMetadata';
-import RiddleQuestFactoryAbi from '../config/abi/RiddleQuestFactory.json';
 import { Spinner } from '../components/ui/Spinner';
-
-export const RIDDLE_FACTORY_ADDRESS =
-  '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0';
+import { useSubmitRiddleProof } from '../hooks/useSubmitRiddleProof';
+import { useGetQuestMetadata } from '../hooks/useGetQuestMetadata';
 
 function getOrCreateDeadline(id: string): string {
   const key = `deadline_${id}`;
@@ -21,77 +16,100 @@ function getOrCreateDeadline(id: string): string {
 }
 
 export default function RiddleDetail() {
-  const { id = '' } = useParams();
-  const factory = RIDDLE_FACTORY_ADDRESS;
-  const questId = Number(id);
-
-  const { data: meta, isLoading } = useQuestMetadata(factory, questId);
+  const params = useParams();
+  const questId = Number(params.id);
+  const RIDDLE_FACTORY_CONTRACT_ADDRESS = import.meta.env
+    .VITE_RIDDLE_FACTORY_CONTRACT_ADDRESS;
 
   const [answer, setAnswer] = useState('');
   const [activity, setActivity] = useState<string[]>(() => {
-    const stored = localStorage.getItem(`attempts_${id}`);
+    const stored = localStorage.getItem(`questId_${questId}`);
     return stored ? JSON.parse(stored) : [];
   });
 
-  useEffect(() => {
-    localStorage.setItem(`attempts_${id}`, JSON.stringify(activity));
-  }, [activity, id]);
+  const { metadata, isLoading } = useGetQuestMetadata(questId);
+  const { submitRiddle, submitStatus } = useSubmitRiddleProof(setActivity);
 
-  const { submit, status: submitStatus } = useSubmitRiddleProof();
+  const questMetadata = useMemo(() => {
+    if (!metadata || isLoading) {
+      return undefined;
+    }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!answer.trim()) return;
-    try {
-      await submit({
+    const { bounty, riddle, solved } = metadata;
+    const deadline = new Date(
+      getOrCreateDeadline(questId.toString())
+    ).toLocaleDateString();
+
+    return {
+      bounty,
+      riddle,
+      solved,
+      status: solved ? 'solved' : 'open',
+      deadline,
+    };
+  }, [metadata, questId, isLoading]);
+
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!answer.trim()) return;
+
+      setActivity((prev) => [`🔄 You submitted “${answer.trim()}”`, ...prev]);
+
+      await submitRiddle({
         guess: answer,
         questId,
-        contractAddress: factory,
+        contractAddress: RIDDLE_FACTORY_CONTRACT_ADDRESS,
       });
-      setActivity((prev) => [`🔄 You submitted “${answer.trim()}”`, ...prev]);
+
       setAnswer('');
-    } catch {
-      /* toast handled by hook */
-    }
-  }
-
-  useWatchContractEvent({
-    address: factory,
-    abi: RiddleQuestFactoryAbi.abi,
-    eventName: 'SubmitFailure',
-    args: [BigInt(questId), undefined, undefined],
-    enabled: !meta?.solved,
-    onLogs(logs : any) {
-      for (const log of logs) {
-        const [, solver] = log.args as [bigint, `0x${string}`];
-        setActivity((prev) => [
-          `❌ ${solver.slice(0, 6)}… made an attempt`,
-          ...prev,
-        ]);
-      }
     },
-    onError(error) {
-      console.error('Error listening for SubmitFailure:', error);
-    },
-    pollingInterval: 15_000,
-  });
+    [submitRiddle, answer, questId, RIDDLE_FACTORY_CONTRACT_ADDRESS]
+  );
 
-  useWatchContractEvent({
-    address: factory,
-    abi: RiddleQuestFactoryAbi.abi,
-    eventName: 'QuestSolved',
-    args: [BigInt(questId)],
-    enabled: !meta?.solved,
-    onLogs() {
-      setActivity((prev) => [
-        '🎉 Proof verified! Quest marked as solved.',
-        ...prev,
-      ]);
-    },
-    pollingInterval: 15_000,
-  });
+  // useWatchContractEvent({
+  //   address: RIDDLE_FACTORY_CONTRACT_ADDRESS,
+  //   abi: RiddleQuestFactoryAbi.abi,
+  //   eventName: 'SubmitFailure',
+  //   args: [BigInt(questId), null],
+  //   enabled: !questMetadata?.solved,
+  //   onLogs(logs) {
+  //     for (const log of logs) {
+  //       /** @ts-expect-error - i know */
+  //       const [, solver] = log.args as [bigint, `0x${string}`];
+  //       setActivity((prev) => [
+  //         `❌ ${solver.slice(0, 6)}… made an attempt`,
+  //         ...prev,
+  //       ]);
+  //     }
+  //   },
+  //   onError(error) {
+  //     console.error('Error listening for SubmitFailure:', error);
+  //   },
+  //   pollingInterval: 15_000,
+  // });
 
-  if (!factory) {
+  // useWatchContractEvent({
+  //   address: RIDDLE_FACTORY_CONTRACT_ADDRESS,
+  //   abi: RiddleQuestFactoryAbi.abi,
+  //   eventName: 'QuestSolved',
+  //   args: [BigInt(questId)],
+  //   enabled: !questMetadata?.solved,
+  //   onLogs() {
+  //     toast.success('🎉 Proof verified! Quest marked as solved.');
+  //     setActivity((prev) => [
+  //       '🎉 Proof verified! Quest marked as solved.',
+  //       ...prev,
+  //     ]);
+  //   },
+  //   pollingInterval: 10_000,
+  // });
+
+  useEffect(() => {
+    localStorage.setItem(`questId_${questId}`, JSON.stringify(activity));
+  }, [activity, questId]);
+
+  if (!RIDDLE_FACTORY_CONTRACT_ADDRESS) {
     return (
       <div className="absolute inset-0 border flex justify-center items-center text-white/70">
         Quest not found 🤔
@@ -99,13 +117,9 @@ export default function RiddleDetail() {
     );
   }
 
-  if (isLoading || !meta) {
+  if (isLoading || !questMetadata) {
     return <Spinner />;
   }
-
-  const { prompt, bounty, solved } = meta;
-  const deadlineStr = new Date(getOrCreateDeadline(id)).toLocaleDateString();
-  const statusLabel = solved ? 'solved' : 'open';
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-16">
@@ -122,27 +136,29 @@ export default function RiddleDetail() {
           <span className="inline-flex items-center gap-1 rounded-full bg-accent-riddle/20 px-2 py-0.5 text-accent-riddle">
             🎲 Puzzle
           </span>
+
           <span
             className={`rounded-full px-2 py-0.5 uppercase tracking-wide ${
-              solved
+              questMetadata.solved
                 ? 'bg-status-completed/20 text-status-completed'
                 : 'bg-status-open/20 text-status-open'
             }`}>
-            {statusLabel}
+            {questMetadata.status}
           </span>
         </div>
+
         <div className="text-xs text-white/60">
-          Reward • {bounty} ETH · Ends • {deadlineStr}
+          Reward • {questMetadata.bounty} ETH · Ends • {questMetadata.deadline}
         </div>
       </div>
 
       {/* Prompt */}
       <pre className="whitespace-pre-wrap rounded-xl bg-white/5 p-6 text-sm leading-relaxed">
-        {prompt}
+        {questMetadata.riddle}
       </pre>
 
       {/* Answer form */}
-      {!solved && (
+      {!questMetadata.solved && (
         <form
           onSubmit={handleSubmit}
           className="mt-6 flex flex-col gap-4 sm:flex-row">
@@ -156,9 +172,10 @@ export default function RiddleDetail() {
               submitStatus === 'generating_proof' ||
               submitStatus === 'submitting_proof' ||
               submitStatus === 'confirming_tx' ||
-              solved
+              questMetadata.solved
             }
           />
+
           <button
             type="submit"
             disabled={
@@ -166,11 +183,9 @@ export default function RiddleDetail() {
               submitStatus === 'generating_proof' ||
               submitStatus === 'submitting_proof' ||
               submitStatus === 'confirming_tx' ||
-              solved
+              questMetadata.solved
             }
             className="inline-flex items-center justify-center gap-2 rounded-full bg-accent-riddle px-6 py-2 text-sm font-medium hover:bg-accent-riddle/80 disabled:opacity-40">
-            {submitStatus === 'generating_proof' ||
-              submitStatus === 'submitting_proof'}
             {submitStatus === 'generating_proof'
               ? 'Generating proof…'
               : submitStatus === 'submitting_proof'
@@ -187,6 +202,7 @@ export default function RiddleDetail() {
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-white/60">
           Activity
         </h2>
+
         {activity.length === 0 ? (
           <p className="text-sm text-white/50">No activity yet.</p>
         ) : (

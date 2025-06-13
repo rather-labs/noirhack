@@ -8,10 +8,11 @@ import { stringToAsciiArray } from '../utils';
 import { parseEther } from 'viem';
 
 interface SubmitProofParams {
+  title: string;
+  excerpt: string;
   riddle: string;
   answer: string;
   bounty: number;
-  contractAddress: `0x${string}`;
 }
 
 export type SubmitStatus =
@@ -23,6 +24,15 @@ export type SubmitStatus =
   | 'error';
 
 export function useSubmitNewQuest() {
+  const RIDDLE_FACTORY_CONTRACT_ADDRESS = import.meta.env
+    .VITE_RIDDLE_FACTORY_CONTRACT_ADDRESS;
+
+  if (!RIDDLE_FACTORY_CONTRACT_ADDRESS) {
+    throw new Error(
+      '⛔ Missing environment variable: RIDDLE_FACTORY_CONTRACT_ADDRESS'
+    );
+  }
+
   const publicClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
 
@@ -35,8 +45,8 @@ export function useSubmitNewQuest() {
   }, []);
 
   const submit = useCallback(
-    async ({ riddle, answer, bounty, contractAddress }: SubmitProofParams) => {
-      const toastId = toast.loading('Generating proof…');
+    async ({ title, excerpt, riddle, answer, bounty }: SubmitProofParams) => {
+      const toastId = toast.loading('Submitting new quest to chain…');
 
       try {
         setStatus('generating_proof');
@@ -44,39 +54,41 @@ export function useSubmitNewQuest() {
         const parsedAnswer = stringToAsciiArray(answer, 6);
         const { publicInputs } = await generateProof({ guess: parsedAnswer });
 
-        toast.loading('Submitting new quest to chain…', { id: toastId });
         setStatus('submitting_proof');
 
         const hash = await writeContractAsync({
           abi: RiddleQuestFactoryAbi.abi,
-          address: contractAddress,
+          address: RIDDLE_FACTORY_CONTRACT_ADDRESS,
           functionName: 'createRiddle',
-          args: [riddle, publicInputs[0]],
+          args: [riddle, title, excerpt, publicInputs[0]],
           value: parseEther(bounty.toString()),
         });
 
-        toast.success('New quest submitted! Waiting for confirmation…', {
+        toast.loading('New quest submitted! Waiting for confirmations…', {
           id: toastId,
         });
-        toast.loading('Waiting for confirmations…', { id: toastId });
         setStatus('confirming_tx');
 
-        await publicClient?.waitForTransactionReceipt({ hash });
+        const confirm = await publicClient?.waitForTransactionReceipt({ hash });
 
-        toast.success('Transaction confirmed! 🎉', {
+        if (confirm?.status === 'reverted') {
+          throw new Error('Something went wrong ups');
+        }
+
+        toast.success('New quest created! 🎉', {
           id: toastId,
         });
         setStatus('success');
+        window.dispatchEvent(new Event('questCreated'));
       } catch (err) {
         const message =
           err instanceof Error ? err.message : String(err ?? 'Unknown error');
         toast.error(message, { id: toastId });
         setError(message);
         setStatus('error');
-        throw err;
       }
     },
-    [publicClient, writeContractAsync]
+    [publicClient, writeContractAsync, RIDDLE_FACTORY_CONTRACT_ADDRESS]
   );
 
   return { submit, reset, status, error };

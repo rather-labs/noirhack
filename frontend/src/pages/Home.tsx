@@ -43,7 +43,6 @@ export default function Home() {
         className="mt-12">
         <Link to="/quests">
           <motion.span
-            /* Breathing glow already animating in background */
             animate={{
               boxShadow: [
                 '0 0 0px rgba(124,58,237, 0.3)',
@@ -51,7 +50,11 @@ export default function Home() {
                 '0 0 0px rgba(124,58,237, 0.3)',
               ],
             }}
-            transition={{ duration: 3, repeat: Number.POSITIVE_INFINITY, ease: 'easeInOut' }}
+            transition={{
+              duration: 3,
+              repeat: Number.POSITIVE_INFINITY,
+              ease: 'easeInOut',
+            }}
             whileHover={{ scale: 1.03 }}
             className="inline-flex items-center gap-2 rounded-full border-2 border-accent-riddle px-8 py-3 text-sm font-semibold uppercase tracking-wide text-accent-riddle">
             <span>Start</span>

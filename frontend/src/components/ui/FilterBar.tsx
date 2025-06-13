@@ -1,4 +1,9 @@
+import { IoIosClose } from 'react-icons/io';
+import { useCallback, useState, type FormEvent } from 'react';
 import type { QuestType, QuestStatus } from './QuestCard';
+import { useAccount } from 'wagmi';
+import toast from 'react-hot-toast';
+import { useSubmitNewQuest } from '../../hooks/useSubmitNewQuest';
 
 interface FilterBarProps {
   selectedType: 'all' | QuestType;
@@ -7,13 +12,13 @@ interface FilterBarProps {
   onStatusChange: (value: 'all' | QuestStatus) => void;
 }
 
-const typeButtons: { value: 'all' | QuestType; label: string }[] = [
+const buttonTypes: { value: 'all' | QuestType; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'riddle', label: 'Riddles' },
   { value: 'vote', label: 'Votes' },
 ];
 
-const statusButtons: { value: 'all' | QuestStatus; label: string }[] = [
+const buttonStatuses: { value: 'all' | QuestStatus; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'open', label: 'Open' },
   { value: 'closed', label: 'Closed' },
@@ -23,8 +28,8 @@ const statusButtons: { value: 'all' | QuestStatus; label: string }[] = [
 const statusColors: Record<QuestStatus, string> = {
   open: 'bg-status-open/20 text-status-open',
   closed: 'bg-status-closed/20 text-status-closed',
-  completed: 'bg-status-completed/20 text-status-completed',
   solved: 'bg-status-solved/20 text-status-solved',
+  completed: 'bg-status-completed/20 text-status-completed',
 };
 
 export default function FilterBar({
@@ -33,34 +38,64 @@ export default function FilterBar({
   selectedStatus,
   onStatusChange,
 }: FilterBarProps) {
-  // const factory = RIDDLE_FACTORY_ADDRESS;
+  const { isConnected } = useAccount();
+  const { submit: submitNewQuest, reset, status } = useSubmitNewQuest();
 
-  // const { submit, status: submitStatus } = useSubmitNewQuest();
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
-  // const [isHovering, setIsHovering] = useState(false);
+  const handleOpenModal = useCallback(() => {
+    if (!isConnected) {
+      toast.error('Account not connected');
+    }
 
-  // // New state for quest submission form
-  // const [newQuestRiddle, setNewQuestRiddle] = useState('');
-  // const [newQuestAnswer, setNewQuestAnswer] = useState('');
-  // const [newQuestBounty, setNewQuestBounty] = useState(0);
-  // Handle quest submission
-  // const handleSubmitQuest = async (e: React.FormEvent) => {
-  //   e.preventDefault();
-  //   if (!newQuestAnswer.trim()) return;
-  //   try {
-  //     await submit({
-  //       riddle: newQuestRiddle,
-  //       answer: newQuestAnswer,
-  //       bounty: newQuestBounty,
-  //       contractAddress: factory,
-  //     });
-  //     setNewQuestRiddle('');
-  //     setNewQuestAnswer('');
-  //     setNewQuestBounty(0);
-  //   } catch {
-  //     /* toast handled by hook */
-  //   }
-  // };
+    setIsModalOpen(true);
+  }, [isConnected]);
+
+  const handleCloseModal = useCallback(() => setIsModalOpen(false), []);
+
+  const handleSubmit = useCallback(
+    async (e: FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+
+      if (!isConnected) {
+        toast.error('You must connect your wallet first');
+        return;
+      }
+
+      const form = e.currentTarget;
+      const title = (
+        form.elements.namedItem('title') as HTMLInputElement
+      ).value.trim();
+      const excerpt = (
+        form.elements.namedItem('excerpt') as HTMLInputElement
+      ).value.trim();
+      const riddle = (
+        form.elements.namedItem('riddle') as HTMLTextAreaElement
+      ).value.trim();
+      const answer = (
+        form.elements.namedItem('answer') as HTMLInputElement
+      ).value.trim();
+      const bountyRaw = (form.elements.namedItem('bounty') as HTMLInputElement)
+        .value;
+      const bounty = parseFloat(bountyRaw);
+      if (isNaN(bounty) || bounty <= 0) {
+        toast.error('Please enter a valid bounty amount');
+        return;
+      }
+
+      await submitNewQuest({
+        title,
+        excerpt,
+        riddle,
+        answer,
+        bounty,
+      });
+      handleCloseModal();
+      form.reset();
+      reset();
+    },
+    [handleCloseModal, reset, isConnected, submitNewQuest]
+  );
 
   return (
     <section
@@ -68,7 +103,7 @@ export default function FilterBar({
                  md:flex-row md:items-center md:justify-between">
       {/* Quest‑type toggle */}
       <div className="flex gap-2 text-sm font-medium">
-        {typeButtons.map(({ value, label }) => {
+        {buttonTypes.map(({ value, label }) => {
           const isActive = selectedType === value;
           return (
             <button
@@ -87,110 +122,16 @@ export default function FilterBar({
         })}
       </div>
 
-      {/* <div>
-        <div className="relative">
-          <button
-            type="button"
-            onMouseEnter={() => setIsHovering(true)}
-            onMouseLeave={() => setIsHovering(false)}
-            className="flex  text-sm font-medium"
-          >
-            Submit new Quest
-          </button>
-
-          {isHovering &&
-            submitStatus !== 'generating_proof' &&
-            submitStatus !== 'submitting_proof' &&
-            submitStatus !== 'confirming_tx' && (
-              <div
-                className="w-[500px] bg-[#1A103D] p-6 rounded-lg border border-[#AD14DB]/30 absolute left-0 top-full z-50"
-                onMouseEnter={() => setIsHovering(true)}
-                onMouseLeave={() => setIsHovering(false)}>
-                <h3 className="text-xl font-medium text-white mb-4">
-                  Submit a New Riddle
-                </h3>
-                <form onSubmit={handleSubmitQuest}>
-                  <div className="mb-6">
-                    <label
-                      htmlFor="quest-riddle"
-                      className="block text-sm font-medium text-white/80 mb-1">
-                      Riddle
-                    </label>
-                    <textarea
-                      id="quest-riddle"
-                      value={newQuestRiddle}
-                      onChange={(e) => setNewQuestRiddle(e.target.value)}
-                      className="w-full bg-[#2C1F56] border border-[#AD14DB]/30 rounded-md px-4 py-2 text-white min-h-[120px]"
-                      placeholder="Enter the new riddle text"
-                      required
-                    />
-                  </div>
-
-                  <div className="mb-6">
-                    <label
-                      htmlFor="quest-riddle"
-                      className="block text-sm font-medium text-white/80 mb-1">
-                      Answer
-                    </label>
-                    <textarea
-                      id="quest-answer"
-                      value={newQuestAnswer}
-                      onChange={(e) => setNewQuestAnswer(e.target.value)}
-                      className="w-full bg-[#2C1F56] border border-[#AD14DB]/30 rounded-md px-4 py-2 text-white min-h-[120px]"
-                      placeholder="Enter the asnwer, must be up to a 6 letter word"
-                      required
-                    />
-                  </div>
-
-                  <div className="mb-6">
-                    <label
-                      htmlFor="quest-riddle"
-                      className="block text-sm font-medium text-white/80 mb-1">
-                      Bounty (ETH)
-                    </label>
-                    <input
-                      id="quest-bounty"
-                      type="number"
-                      value={newQuestBounty}
-                      onChange={(e) =>
-                        setNewQuestBounty(Number(e.target.value))
-                      }
-                      className="w-full bg-[#2C1F56] border border-[#AD14DB]/30 rounded-md px-4 py-2 text-white "
-                      placeholder="Enter the bounty"
-                      min="1e-9"
-                      required
-                    />
-                  </div>
-
-                  <div className="flex gap-3">
-                    <button
-                      type="submit"
-                      disabled={
-                        !newQuestRiddle.trim() ||
-                        !newQuestAnswer.trim() ||
-                        submitStatus in
-                          [
-                            'generating_proof',
-                            'submitting_proof',
-                            'confirming_tx',
-                          ]
-                      }
-                      className="px-4 py-2 bg-[#AD14DB] text-white rounded-md hover:bg-[#8E10B4] transition-colors disabled:opacity-50">
-                      {submitStatus in
-                      ['generating_proof', 'submitting_proof', 'confirming_tx']
-                        ? 'Submitting Quest...'
-                        : 'Submit Quest'}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
-        </div>
-      </div> */}
-
       {/* Status toggle---- */}
       <div className="flex gap-2 text-xs uppercase tracking-wide">
-        {statusButtons.map(({ value, label }) => {
+        {/* New Quest Button */}
+        <button
+          onClick={handleOpenModal}
+          className="mr-2 px-2 py-0.5 text-sm cursor-pointer rounded-full text-purple-300 bg-accent-riddle/60 hover:bg-accent-riddle/90">
+          {`New Quest  🏹`}
+        </button>
+
+        {buttonStatuses.map(({ value, label }) => {
           const isActive = selectedStatus === value;
           const colorClass =
             value !== 'all' ? statusColors[value] : 'bg-white/5';
@@ -211,6 +152,102 @@ export default function FilterBar({
           );
         })}
       </div>
+
+      {isModalOpen && isConnected && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50 bg-color-black backdrop-blur-sm"
+          onClick={handleCloseModal}>
+          <div
+            className="relative w-full max-w-md rounded-2xl bg-white/10 p-6 text-white shadow-2xl"
+            onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={handleCloseModal}
+              className="absolute right-3 top-3 rounded-full p-1 transition hover:bg-white/10">
+              <IoIosClose className="h-4 w-4" />
+            </button>
+
+            <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+              <span>
+                <label
+                  htmlFor="title"
+                  className="text-sm font-medium text-white/80 mb-1">
+                  Title
+                </label>
+                <input
+                  id="title"
+                  className="w-full bg-[#2C1F56] border border-[#AD14DB]/30 rounded-md px-4 py-2 text-white"
+                  placeholder="Mystery..."
+                  required
+                />
+              </span>
+
+              <span>
+                <label
+                  htmlFor="excerpt"
+                  className="text-sm font-medium text-white/80 mb-1">
+                  Excerpt
+                </label>
+                <input
+                  id="excerpt"
+                  className="w-full bg-[#2C1F56] border border-[#AD14DB]/30 rounded-md px-4 py-2 text-white"
+                  placeholder="More Mystery..."
+                  required
+                />
+              </span>
+
+              <span>
+                <label
+                  htmlFor="riddle"
+                  className="text-sm font-medium text-white/80 mb-1">
+                  Riddle
+                </label>
+                <textarea
+                  id="riddle"
+                  className="w-full bg-[#2C1F56] border border-[#AD14DB]/30 rounded-md px-4 py-2 text-white min-h-[100px]"
+                  placeholder="Enter the new riddle text"
+                  required
+                />
+              </span>
+
+              <span>
+                <label
+                  htmlFor="answer"
+                  className="text-sm font-medium text-white/80 mb-1">
+                  Answer
+                </label>
+                <input
+                  id="answer"
+                  className="w-full bg-[#2C1F56] border border-[#AD14DB]/30 rounded-md px-4 py-2 text-white"
+                  placeholder="Enter the asnwer, must be up to a 6 letter word"
+                  required
+                />
+              </span>
+
+              <span>
+                <label
+                  htmlFor="bounty"
+                  className="block text-sm font-medium text-white/80 mb-1">
+                  Bounty (ETH)
+                </label>
+                <input
+                  id="bounty"
+                  className="w-full bg-[#2C1F56] border border-[#AD14DB]/30 rounded-md px-4 py-2 text-white "
+                  placeholder="Enter the bounty"
+                  required
+                />
+              </span>
+
+              <button
+                type="submit"
+                disabled={status !== 'idle'}
+                className={`disabled:cursor-default cursor-pointer self-center rounded-full px-8 py-2 text-sm font-medium transition-colors bg-accent-riddle hover:bg-accent-riddle/80`}>
+                Create New Quest
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

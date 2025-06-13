@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import { generateProof } from '../noir/generateRiddleProof';
-import { usePublicClient, useWriteContract } from 'wagmi';
+import { useAccount, usePublicClient, useWriteContract } from 'wagmi';
 
 import RiddleQuestFactoryAbi from '../config/abi/RiddleQuestFactory.json';
 import { stringToAsciiArray } from '../utils';
@@ -20,8 +20,11 @@ export type SubmitStatus =
   | 'success'
   | 'error';
 
-export function useSubmitRiddleProof() {
+export function useSubmitRiddleProof(
+  setActivity: React.Dispatch<React.SetStateAction<string[]>>
+) {
   const publicClient = usePublicClient();
+  const { isConnected } = useAccount();
   const { writeContractAsync } = useWriteContract();
 
   const [status, setStatus] = useState<SubmitStatus>('idle');
@@ -34,6 +37,10 @@ export function useSubmitRiddleProof() {
 
   const submit = useCallback(
     async ({ guess, questId, contractAddress }: SubmitProofParams) => {
+      if (!isConnected) {
+        toast.error('Account not connected');
+      }
+
       const toastId = toast.loading('Generating proof…');
 
       try {
@@ -58,12 +65,24 @@ export function useSubmitRiddleProof() {
         toast.loading('Waiting for confirmations…', { id: toastId });
         setStatus('confirming_tx');
 
-        await publicClient?.waitForTransactionReceipt({ hash });
+        const confirm = await publicClient?.waitForTransactionReceipt({ hash });
 
-        toast.success('Transaction confirmed! 🎉', {
-          id: toastId,
-        });
+        if (confirm?.status === 'reverted') {
+          throw new Error('Proof verification failed');
+        }
+
+        toast.success(
+          'Transaction confirmed! 🎉🎉 Proof verified! Quest marked as solved.',
+          {
+            id: toastId,
+          }
+        );
+        setActivity((prev) => [
+          '🎉 Proof verified! Quest marked as solved.',
+          ...prev,
+        ]);
         setStatus('success');
+        window.dispatchEvent(new Event('questUpdated'));
       } catch (err) {
         const message =
           err instanceof Error ? err.message : String(err ?? 'Unknown error');
@@ -71,11 +90,15 @@ export function useSubmitRiddleProof() {
         toast.error('Proof verification failed', { id: toastId });
         setError(message);
         setStatus('error');
-        throw err;
       }
     },
-    [publicClient, writeContractAsync]
+    [publicClient, writeContractAsync, isConnected, setActivity]
   );
 
-  return { submit, reset, status, error };
+  return {
+    submitRiddle: submit,
+    resetRiddle: reset,
+    submitError: error,
+    submitStatus: status,
+  };
 }

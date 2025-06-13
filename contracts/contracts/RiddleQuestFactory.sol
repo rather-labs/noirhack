@@ -14,6 +14,8 @@ contract RiddleQuestFactory {
     mapping(uint256 => uint256) public bounties;
     mapping(uint256 => bytes32) public solutionHash;
     mapping(uint256 => string) public riddle;
+    mapping(uint256 => string) public title;
+    mapping(uint256 => string) public excerpt;
     mapping(uint256 => bool) public solved;
 
     uint256 public questId;
@@ -52,31 +54,43 @@ contract RiddleQuestFactory {
                 }
             }
         } catch {
-            emit SubmitFailure(_questId, msg.sender, "Proof verification failed");
+            emit SubmitFailure(
+                _questId,
+                msg.sender,
+                "Proof verification failed"
+            );
             revert("Proof verification failed");
         }
     }
 
     function createRiddle(
         string memory _riddle,
+        string memory _title,
+        string memory _excerpt,
         bytes32 _solutionHash
     ) external payable {
         if (msg.value == 0) {
-            emit CreateFailure(questId+1, msg.sender, "Bounty required");
+            emit CreateFailure(questId + 1, msg.sender, "Bounty required");
             revert("Bounty required");
         }
         if (_solutionHash == bytes32(0)) {
-            emit CreateFailure(questId+1, msg.sender, "Solution hash required");
+            emit CreateFailure(
+                questId + 1,
+                msg.sender,
+                "Solution hash required"
+            );
             revert("Solution hash required");
         }
 
-        questId++;
         solutionHash[questId] = _solutionHash;
         riddle[questId] = _riddle;
+        title[questId] = _title;
+        excerpt[questId] = _excerpt;
         bounties[questId] = msg.value;
         if (lowerOpenQuestId == 0) {
             lowerOpenQuestId = questId;
         }
+        questId++;
         emit QuestCreated(questId, msg.value, _solutionHash);
     }
 
@@ -97,6 +111,8 @@ contract RiddleQuestFactory {
             bytes32 _solutionHash,
             uint256 _bounty,
             string memory _riddle,
+            string memory _riddleTitle,
+            string memory _riddleExcerpt,
             bool _solved
         )
     {
@@ -104,6 +120,8 @@ contract RiddleQuestFactory {
             solutionHash[_questId],
             bounties[_questId],
             riddle[_questId],
+            title[_questId],
+            excerpt[_questId],
             solved[_questId]
         );
     }
